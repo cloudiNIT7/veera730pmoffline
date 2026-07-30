@@ -286,8 +286,85 @@
     window._fx = {
         shake() { if (!reduce) anime({ targets: '#card', translateX: [0, -8, 7, -5, 3, 0], duration: 420, easing: 'easeInOutSine' }); },
         success() { if (!reduce) anime({ targets: '#loginBtn', scale: [1, 1.02, 1], duration: 450, easing: 'easeOutQuad' }); },
-        msg(el) { if (reduce) { el.style.opacity = 1; return; } anime.remove(el); anime({ targets: el, opacity: [0,1], translateY: [-6,0], duration: 320, easing: 'easeOutQuad' }); },
- 1000);
+        msg(el) { if (reduce) { el.style.opacity = 1; return; } anime.remove(el); anime({ targets: el, opacity: [0,1], translateY: [-6,0], duration: 320, easing: 'easeOutQuad' }); }
+    };
+})();
+</script>
+
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-analytics.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCnuw9gryQYmk3SXVyJyw9piH5VpuapDj4",
+        authDomain: "veera730pmoffline.firebaseapp.com",
+        projectId: "veera730pmoffline",
+        storageBucket: "veera730pmoffline.firebasestorage.app",
+        messagingSenderId: "302438121216",
+        appId: "1:302438121216:web:bb010db38d4225d656bde5",
+        measurementId: "G-624V2DN4F8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+
+    const vidIdle    = document.getElementById('vid-idle');
+    const vidCorrect = document.getElementById('vid-correct');
+    const vidWrong   = document.getElementById('vid-wrong');
+
+    [vidCorrect, vidWrong].forEach(v => {
+        v.load();
+        const unlock = () => { v.play().then(() => v.pause()).catch(() => {}); v.removeEventListener('canplaythrough', unlock); };
+        v.addEventListener('canplaythrough', unlock);
+    });
+
+    let _activeVid = vidIdle;
+    function updateVideo(type) {
+        const next = type === 'correct' ? vidCorrect : vidWrong;
+        if (next === _activeVid) return;
+        next.currentTime = 0;
+        next.play().catch(() => {});
+        next.style.opacity = '1';
+        _activeVid.style.opacity = '0';
+        _activeVid = next;
+    }
+
+    function showMsg(id, text, type) {
+        const el = document.getElementById(id);
+        el.innerHTML = '<span class="dot"></span><span>' + text + '</span>';
+        el.className = 'message ' + type;
+        if (window._fx) window._fx.msg(el);
+    }
+    function clearMsg(id) {
+        const el = document.getElementById(id);
+        el.innerHTML = '';
+        el.className = 'message';
+    }
+
+    window.login = async () => {
+        const email    = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const btn      = document.getElementById('loginBtn');
+        const label    = btn.querySelector('.btn-label');
+
+        if (!email || !password) {
+            showMsg('loginMsg', 'Please enter both email and password.', 'error');
+            if (window._fx) window._fx.shake();
+            return;
+        }
+
+        btn.disabled = true; label.textContent = 'Signing in…';
+        clearMsg('loginMsg');
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            updateVideo('correct');
+            if (window._fx) window._fx.success();
+            showMsg('loginMsg', 'Login successful. Redirecting…', 'success');
+            setTimeout(() => { window.location.href = 'veerawsg1.html'; }, 1000);
         } catch (err) {
             updateVideo('wrong');
             if (window._fx) window._fx.shake();
