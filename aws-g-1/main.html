@@ -187,40 +187,6 @@
         .message.warning { background: rgba(217,154,60,0.1);  color: var(--warn); border-color: rgba(217,154,60,0.3); display: flex; }
         .message .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-        /* Geo overlays */
-        #geoChecking, #geoOverlay {
-            position: absolute; inset: 0; z-index: 10;
-            background: rgba(255,247,243,0.97); backdrop-filter: blur(8px);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-align: center; padding: 30px;
-        }
-        #geoChecking { gap: 18px; color: var(--ink-soft); font-size: 0.9em; }
-        .heart-loader {
-            width: 44px; height: 44px; position: relative;
-            transform: rotate(-45deg); animation: beat 1s ease-in-out infinite;
-        }
-        .heart-loader::before, .heart-loader::after {
-            content: ''; position: absolute; width: 44px; height: 44px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--rose), var(--gold));
-        }
-        .heart-loader::before { top: -22px; left: 0; }
-        .heart-loader::after  { top: 0; left: 22px; }
-        .heart-loader .sq { position: absolute; inset: 0; background: linear-gradient(135deg, var(--rose), var(--gold)); }
-        @keyframes beat { 0%,100% { transform: rotate(-45deg) scale(1); } 50% { transform: rotate(-45deg) scale(1.15); } }
-
-        #geoOverlay .geo-icon {
-            width: 60px; height: 60px; border-radius: 18px; margin-bottom: 18px;
-            background: rgba(217,80,110,0.1); border: 1px solid rgba(217,80,110,0.28);
-            display: grid; place-items: center; font-size: 1.7em;
-        }
-        #geoOverlay h3 { font-family: 'Fraunces', serif; font-size: 1.3em; color: var(--err); margin-bottom: 10px; font-weight: 700; }
-        #geoOverlay p { color: var(--ink-soft); font-size: 0.88em; line-height: 1.6; margin-bottom: 20px; max-width: 300px; }
-        #geoOverlay .lab-badge {
-            background: #fff; border: 1px solid var(--line);
-            color: var(--ink); padding: 10px 20px; border-radius: 30px;
-            font-size: 0.82em; font-weight: 500; box-shadow: 0 6px 16px rgba(210,93,130,0.14);
-        }
-
         @media (max-width: 820px) {
             body { overflow-y: auto; padding: 24px 0; }
             .login-container { flex-direction: column; width: 92%; height: auto; }
@@ -255,18 +221,6 @@
     </div>
 
     <div class="login-panel">
-
-        <div id="geoChecking">
-            <div class="heart-loader"><div class="sq"></div></div>
-            <span>Verifying your location…</span>
-        </div>
-
-        <div id="geoOverlay" style="display:none;">
-            <div class="geo-icon">🔒</div>
-            <h3>Access restricted</h3>
-            <p>This portal can only be accessed from the Veera Cloud Lab. Please visit the lab and try again.</p>
-            <span class="lab-badge">📍 Visit the lab to sign in</span>
-        </div>
 
         <div class="form-body" id="loginForm">
             <div class="flourish anim"><span class="line"></span><span class="dot"></span><span>Girls Portal</span></div>
@@ -333,115 +287,7 @@
         shake() { if (!reduce) anime({ targets: '#card', translateX: [0, -8, 7, -5, 3, 0], duration: 420, easing: 'easeInOutSine' }); },
         success() { if (!reduce) anime({ targets: '#loginBtn', scale: [1, 1.02, 1], duration: 450, easing: 'easeOutQuad' }); },
         msg(el) { if (reduce) { el.style.opacity = 1; return; } anime.remove(el); anime({ targets: el, opacity: [0,1], translateY: [-6,0], duration: 320, easing: 'easeOutQuad' }); },
-        deny() { if (!reduce) anime({ targets: '#geoOverlay .geo-icon, #geoOverlay h3, #geoOverlay p, #geoOverlay .lab-badge', translateY: [12,0], opacity: [0,1], delay: anime.stagger(70), duration: 450, easing: 'easeOutQuad' }); }
-    };
-})();
-</script>
-
-<script>
-(function() {
-    var LAT = 17.43827, LNG = 78.45258, MAX_DIST_M = 500;
-    function haversine(lat1,lon1,lat2,lon2) {
-        var R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
-        var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-        return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-    }
-    function allow() {
-        document.getElementById('geoChecking').style.display='none';
-        document.getElementById('geoOverlay').style.display='none';
-    }
-    function deny() {
-        document.getElementById('geoChecking').style.display='none';
-        document.getElementById('geoOverlay').style.display='flex';
-        if (window._fx) window._fx.deny();
-        ['loginEmail','loginPassword','loginBtn'].forEach(function(id){
-            var el=document.getElementById(id); if(el) el.disabled=true;
-        });
-    }
-    if (!navigator.geolocation) { deny(); return; }
-    navigator.geolocation.getCurrentPosition(
-        function(pos) {
-            haversine(pos.coords.latitude,pos.coords.longitude,LAT,LNG)<=MAX_DIST_M ? allow() : deny();
-        },
-        function() { deny(); },
-        { timeout:10000, maximumAge:60000 }
-    );
-})();
-</script>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-analytics.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCnuw9gryQYmk3SXVyJyw9piH5VpuapDj4",
-        authDomain: "veera730pmoffline.firebaseapp.com",
-        projectId: "veera730pmoffline",
-        storageBucket: "veera730pmoffline.firebasestorage.app",
-        messagingSenderId: "302438121216",
-        appId: "1:302438121216:web:bb010db38d4225d656bde5",
-        measurementId: "G-624V2DN4F8"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const auth = getAuth(app);
-
-    const vidIdle    = document.getElementById('vid-idle');
-    const vidCorrect = document.getElementById('vid-correct');
-    const vidWrong   = document.getElementById('vid-wrong');
-
-    [vidCorrect, vidWrong].forEach(v => {
-        v.load();
-        const unlock = () => { v.play().then(() => v.pause()).catch(() => {}); v.removeEventListener('canplaythrough', unlock); };
-        v.addEventListener('canplaythrough', unlock);
-    });
-
-    let _activeVid = vidIdle;
-    function updateVideo(type) {
-        const next = type === 'correct' ? vidCorrect : vidWrong;
-        if (next === _activeVid) return;
-        next.currentTime = 0;
-        next.play().catch(() => {});
-        next.style.opacity = '1';
-        _activeVid.style.opacity = '0';
-        _activeVid = next;
-    }
-
-    function showMsg(id, text, type) {
-        const el = document.getElementById(id);
-        el.innerHTML = '<span class="dot"></span><span>' + text + '</span>';
-        el.className = 'message ' + type;
-        if (window._fx) window._fx.msg(el);
-    }
-    function clearMsg(id) {
-        const el = document.getElementById(id);
-        el.innerHTML = '';
-        el.className = 'message';
-    }
-
-    window.login = async () => {
-        const email    = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        const btn      = document.getElementById('loginBtn');
-        const label    = btn.querySelector('.btn-label');
-
-        if (!email || !password) {
-            showMsg('loginMsg', 'Please enter both email and password.', 'error');
-            if (window._fx) window._fx.shake();
-            return;
-        }
-
-        btn.disabled = true; label.textContent = 'Signing in…';
-        clearMsg('loginMsg');
-
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            updateVideo('correct');
-            if (window._fx) window._fx.success();
-            showMsg('loginMsg', 'Login successful. Redirecting…', 'success');
-            setTimeout(() => { window.location.href = 'veerawsg1.html'; }, 1000);
+ 1000);
         } catch (err) {
             updateVideo('wrong');
             if (window._fx) window._fx.shake();
