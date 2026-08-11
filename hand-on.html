@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud iNIT · Hands-On Playground</title>
+<link rel="icon" type="image/png" href="https://i.ibb.co/C5XqXXx5/d2a09cd4-f07d-4034-99ad-51292342123d.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+<style>
+:root{
+--bg-deep:#0a0a0f;--glass:rgba(255,255,255,.055);--glass-border:rgba(255,255,255,.10);
+--blur:saturate(180%) blur(24px);--white:#f5f5f7;--white-60:rgba(245,245,247,.60);--white-35:rgba(245,245,247,.35);
+--accent:#0a84ff;--accent-soft:rgba(10,132,255,.18);--accent-glow:rgba(10,132,255,.28);
+--green:#30d158;--green-soft:rgba(48,209,88,.14);--red:#ff453a;--red-soft:rgba(255,69,58,.14);
+--yellow:#ffd60a;--yellow-soft:rgba(255,214,10,.14);
+--radius-lg:20px;--radius-md:14px;--radius-sm:8px;
+--ease-spring:cubic-bezier(.34,1.56,.64,1);--ease-smooth:cubic-bezier(.25,.46,.45,.94);
+--font:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg-deep);color:var(--white);min-height:100vh;padding:0 0 80px;overflow-x:hidden;-webkit-font-smoothing:antialiased;transition:background 1.2s ease}
+
+
+/* WEATHER PANEL */
+
+/* BACKGROUND */
+.scene{position:fixed;inset:0;pointer-events:none;z-index:0}
+.scene canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.3}
+.orb{position:absolute;border-radius:50%;filter:blur(90px)}
+.orb-1{width:520px;height:520px;background:radial-gradient(#1a4fff28,transparent 65%);top:-160px;left:-100px}
+.orb-2{width:380px;height:380px;background:radial-gradient(#6e3fff1e,transparent 65%);top:38%;right:-80px}
+.orb-3{width:460px;height:340px;background:radial-gradient(#0a84ff12,transparent 65%);bottom:5%;left:22%}
+#progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--accent),#5e5ce6,#30d158);transform-origin:left;transform:scaleX(0);z-index:200}
+
+/* NAVBAR */
+.navbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:rgba(10,10,20,.72);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid rgba(255,255,255,.07);gap:24px}
+.navbar-brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.brand-icon{width:38px;height:38px;background:linear-gradient(145deg,#1a1a2e,#2a2a4e);border:1px solid rgba(255,255,255,.14);border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.brand-icon img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.brand-name{font-size:.95rem;font-weight:600;letter-spacing:-.01em}
+.brand-sep{width:1px;height:18px;background:rgba(255,255,255,.12)}
+.brand-sub{font-size:.82rem;font-weight:400;color:var(--white-60)}
+.navbar-right{display:flex;align-items:center;gap:12px}
+.status-badge{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:500;letter-spacing:.04em;padding:4px 12px;border-radius:20px;backdrop-filter:blur(12px)}
+.status-badge.live{color:var(--green);background:var(--green-soft);border:1px solid rgba(48,209,88,.22)}
+.status-badge.offline{color:var(--red);background:var(--red-soft);border:1px solid rgba(255,69,58,.22)}
+.status-dot{width:6px;height:6px;border-radius:50%}
+.status-badge.live .status-dot{background:var(--green);animation:pulse-green 2s ease-in-out infinite}
+.status-badge.offline .status-dot{background:var(--red)}
+@keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(48,209,88,.5)}50%{box-shadow:0 0 0 4px rgba(48,209,88,0)}}
+.clock-display{font-size:.82rem;font-weight:500;color:var(--white-60);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+
+/* HERO */
+.container{max-width:1180px;margin:0 auto;padding:0 32px;position:relative;z-index:10}
+.hero{padding:64px 0 40px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.hero-eyebrow::before{content:'';width:20px;height:1px;background:var(--accent);opacity:.6}
+.hero h1{font-size:2.8rem;font-weight:700;letter-spacing:-.03em;line-height:1.12;color:var(--white);margin-bottom:14px}
+.hero h1 .word{display:inline-block}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,#0a84ff 0%,#5e5ce6 60%,#30d158 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:1rem;font-weight:400;color:var(--white-60);line-height:1.7;max-width:560px}
+.hero-desc strong{color:var(--white-60);font-weight:500}
+
+/* SEGMENTED */
+.seg-wrap{margin:36px 0 32px;display:flex;align-items:center;gap:20px}
+.seg-control{display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:4px;backdrop-filter:blur(16px)}
+.seg-btn{display:flex;align-items:center;gap:6px;padding:8px 18px;font-family:var(--font);font-size:.87rem;font-weight:500;color:var(--white-60);background:transparent;border:none;border-radius:9px;cursor:pointer;letter-spacing:-.01em;transition:color .2s,background .2s}
+.seg-btn:hover{color:var(--white);background:rgba(255,255,255,.05)}
+.seg-btn.active{color:var(--white);background:rgba(255,255,255,.12);box-shadow:0 1px 8px rgba(0,0,0,.3),0 0 0 .5px rgba(255,255,255,.14)}
+.seg-divider{width:1px;height:20px;background:rgba(255,255,255,.10)}
+.seg-clock{font-size:.8rem;font-weight:500;color:var(--white-35);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.section-header{margin-bottom:22px}
+.section-header h2{font-size:1.05rem;font-weight:600;color:var(--white);letter-spacing:-.01em;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.section-tag{font-size:.72rem;font-weight:600;letter-spacing:.05em;padding:2px 9px;border-radius:6px}
+.section-tag.live{color:var(--green);background:var(--green-soft);border:1px solid rgba(48,209,88,.2)}
+.section-tag.offline{color:var(--red);background:var(--red-soft);border:1px solid rgba(255,69,58,.2)}
+.section-header p{font-size:.9rem;color:var(--white-60);line-height:1.65;max-width:580px}
+
+/* CARDS */
+.grid{display:none;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-bottom:44px}
+.grid.active{display:grid}
+.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;position:relative;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);transition:border-color .22s,box-shadow .22s,transform .22s}
+.card:not(.deactivated):hover{border-color:rgba(255,255,255,.18);box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 .5px rgba(255,255,255,.13),0 4px 24px rgba(10,132,255,.10);transform:translateY(-4px)}
+.banner{height:120px;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible}
+.banner-noise{position:absolute;inset:0;opacity:.06;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px}
+
+/* LOGO + TOOLTIP */
+.logo-wrap{position:relative;z-index:6;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.banner-logo{width:56px;height:56px;border-radius:var(--radius-sm);display:block;transition:transform .35s var(--ease-spring);filter:drop-shadow(0 4px 16px rgba(0,0,0,.4))}
+.logo-wrap:hover .banner-logo{transform:scale(1.12) translateY(-2px)}
+.logo-tooltip{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%) translateY(6px);background:rgba(10,10,20,.96);border:1px solid rgba(255,255,255,.16);color:#f5f5f7;font-size:.75rem;font-weight:600;padding:6px 12px;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .2s ease,transform .2s var(--ease-spring),visibility .2s;box-shadow:0 8px 24px rgba(0,0,0,.55);z-index:20}
+.logo-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:rgba(10,10,20,.96)}
+.logo-wrap:hover .logo-tooltip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+
+.banner-status{position:absolute;top:12px;right:14px;z-index:2;display:flex;align-items:center;gap:5px;font-size:.68rem;font-weight:600;letter-spacing:.06em;padding:4px 10px;border-radius:20px;backdrop-filter:blur(8px)}
+.banner-status.live{color:var(--green);background:rgba(0,0,0,.5);border:1px solid rgba(48,209,88,.25)}
+.banner-status.offline{color:var(--red);background:rgba(0,0,0,.5);border:1px solid rgba(255,69,58,.25)}
+.banner-status-dot{width:5px;height:5px;border-radius:50%}
+.banner-status.live .banner-status-dot{background:var(--green);animation:pulse-green 2s infinite}
+.banner-status.offline .banner-status-dot{background:var(--red)}
+.card-body{padding:20px 22px 22px;display:flex;flex-direction:column;flex:1;gap:8px}
+.card-title{font-size:.98rem;font-weight:600;color:var(--white);display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.pill{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:5px}
+.pill-green{color:var(--green);background:var(--green-soft);border:1px solid rgba(48,209,88,.2)}
+.pill-red{color:var(--red);background:var(--red-soft);border:1px solid rgba(255,69,58,.2)}
+.pill-yellow{color:var(--yellow);background:var(--yellow-soft);border:1px solid rgba(255,214,10,.2)}
+.card-desc{font-size:.875rem;color:var(--white-60);line-height:1.65}
+.meta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-top:4px;padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.07)}
+.meta-row .btn{margin-left:auto;padding:7px 13px;font-size:.78rem}
+.hours-chip{display:inline-flex;align-items:center;gap:5px;font-size:.73rem;font-weight:500;color:var(--white-35);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;width:fit-content}
+.spacer{flex:1}
+.divider{height:1px;background:rgba(255,255,255,.07);margin:4px -22px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 16px;font-family:var(--font);font-size:.82rem;font-weight:500;border:none;border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;transition:background .18s,transform .18s,box-shadow .18s;position:relative;overflow:hidden}
+.btn-ghost{background:rgba(255,255,255,.07);color:var(--white-60);border:1px solid rgba(255,255,255,.10)}
+.btn-ghost:hover{background:rgba(255,255,255,.11);color:var(--white)}
+/* the whole card is the target now */
+.card[data-href]{cursor:pointer}
+.card[data-href]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* ===== LAUNCH SEQUENCE — THE WIZARD 🧙‍♂️ ===== */
+/* Everything is scoped under .launch-stage so these very generic class
+   names (.body, .head, .face, .progress…) can't collide with the page. */
+
+.card.launching{pointer-events:none !important;cursor:progress;transform:none !important}
+.card.launching .card-body,
+.card.launching .banner{opacity:0;transition:opacity .28s}
+
+.launch-stage{
+  position:absolute;inset:0;display:none;overflow:hidden;border-radius:inherit;z-index:9;
+  background:#ffffff;
+  --wz-primary:#3f64ce;
+  --wz-skin:#f1c5b4;
+  --wz-bg:#ffffff;
+  --wz-dur:5s;
+  --wz-scale:1;
+}
+.card.launching .launch-stage{display:flex;align-items:center;justify-content:center}
+
+.launch-stage .wz-wrap{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:400px;                     /* the scene sits above, the bar below it */
+  transform:scale(var(--wz-scale));transform-origin:center center;
+}
+
+/* renamed from .scene — the page already uses that class for the fixed
+   full-screen orb layer, which was dragging the wizard out of the card */
+.launch-stage .wz-scene{
+  position:relative;display:flex;
+  width:400px;height:240px;
+  align-items:flex-end;justify-content:center;
+  overflow:hidden;                 /* shapes rise into view from below */
+}
+
+/* ── wizard ── */
+.launch-stage .wizard{position:relative;width:190px;height:240px}
+
+.launch-stage .body{position:absolute;bottom:0;left:68px;height:100px;width:60px;background:var(--wz-primary)}
+.launch-stage .body::after{content:"";position:absolute;bottom:0;left:20px;height:100px;width:60px;
+  background:var(--wz-primary);transform:skewX(14deg)}
+
+.launch-stage .right-arm{position:absolute;bottom:74px;left:110px;height:44px;width:90px;
+  background:var(--wz-primary);border-radius:22px;
+  transform-origin:16px 22px;transform:rotate(70deg);
+  animation:wz_right_arm var(--wz-dur) ease-in-out infinite}
+.launch-stage .right-hand{position:absolute;right:8px;bottom:8px;width:30px;height:30px;border-radius:50%;
+  background:var(--wz-skin);transform-origin:center center;transform:rotate(-40deg);
+  animation:wz_right_hand var(--wz-dur) ease-in-out infinite}
+.launch-stage .right-hand::after{content:"";position:absolute;right:0;top:-8px;width:15px;height:30px;
+  border-radius:10px;background:var(--wz-skin);transform:translateY(16px);
+  animation:wz_right_finger var(--wz-dur) ease-in-out infinite}
+
+.launch-stage .left-arm{position:absolute;bottom:74px;left:26px;height:44px;width:70px;
+  background:var(--wz-primary);border-bottom-left-radius:8px;
+  transform-origin:60px 26px;transform:rotate(-70deg);
+  animation:wz_left_arm var(--wz-dur) ease-in-out infinite}
+.launch-stage .left-hand{position:absolute;left:-18px;top:0;width:18px;height:30px;
+  border-top-left-radius:35px;border-bottom-left-radius:35px;background:var(--wz-skin)}
+.launch-stage .left-hand::after{content:"";position:absolute;right:0;top:0;width:30px;height:15px;
+  border-radius:20px;background:var(--wz-skin);transform-origin:right bottom;transform:scaleX(0);
+  animation:wz_left_finger var(--wz-dur) ease-in-out infinite}
+
+.launch-stage .head{position:absolute;top:0;left:14px;width:160px;height:210px;
+  transform-origin:center center;transform:rotate(-3deg);
+  animation:wz_head var(--wz-dur) ease-in-out infinite}
+.launch-stage .beard{position:absolute;bottom:0;left:38px;height:106px;width:80px;
+  border-bottom-right-radius:55%;background:var(--wz-bg)}
+.launch-stage .beard::after{content:"";position:absolute;top:16px;left:-10px;width:40px;height:20px;
+  border-radius:20px;background:var(--wz-bg)}
+.launch-stage .face{position:absolute;bottom:76px;left:38px;height:30px;width:60px;background:var(--wz-skin)}
+.launch-stage .face::before{content:"";position:absolute;top:0;left:40px;width:20px;height:40px;
+  border-bottom-right-radius:20px;border-bottom-left-radius:20px;background:var(--wz-skin)}
+.launch-stage .face::after{content:"";position:absolute;top:16px;left:-10px;width:50px;height:20px;
+  border-radius:20px;border-bottom-right-radius:0;background:var(--wz-bg)}
+.launch-stage .adds{position:absolute;top:0;left:-10px;width:40px;height:20px;border-radius:20px;
+  background:var(--wz-skin)}
+.launch-stage .adds::after{content:"";position:absolute;top:5px;left:80px;width:15px;height:20px;
+  border-bottom-right-radius:20px;border-top-right-radius:20px;background:var(--wz-skin)}
+
+.launch-stage .hat{position:absolute;bottom:106px;left:0;width:160px;height:20px;border-radius:20px;
+  background:var(--wz-primary)}
+.launch-stage .hat::before{content:"";position:absolute;top:-70px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-style:solid;border-width:0 34px 70px 50px;
+  border-color:transparent transparent var(--wz-primary) transparent}
+.launch-stage .hat::after{content:"";position:absolute;top:0;left:0;width:160px;height:20px;
+  background:var(--wz-primary);border-radius:20px}
+.launch-stage .hat-of-the-hat{position:absolute;bottom:78px;left:79px;width:0;height:0;border-style:solid;
+  border-width:0 25px 25px 19px;border-color:transparent transparent var(--wz-primary) transparent}
+.launch-stage .hat-of-the-hat::after{content:"";position:absolute;top:6px;left:-4px;width:35px;height:10px;
+  border-radius:10px;border-bottom-left-radius:0;background:var(--wz-primary);transform:rotate(40deg)}
+
+.launch-stage .four-point-star{position:absolute;width:12px;height:12px}
+.launch-stage .four-point-star::after,
+.launch-stage .four-point-star::before{content:"";position:absolute;background:var(--wz-bg);display:block;
+  left:0;width:141.4213%;top:0;bottom:0;border-radius:10%;transform:rotate(66.66deg) skewX(45deg)}
+.launch-stage .four-point-star::after{transform:rotate(156.66deg) skew(45deg)}
+.launch-stage .star-1{bottom:28px;left:46px}
+.launch-stage .star-2{bottom:40px;left:80px}
+.launch-stage .star-3{bottom:15px;left:108px}
+
+/* ── conjured objects ── */
+.launch-stage .objects{position:relative;width:200px;height:240px}
+.launch-stage .square{position:absolute;bottom:-60px;left:-5px;width:120px;height:120px;border-radius:50%;
+  transform:rotate(-360deg);animation:wz_path_square var(--wz-dur) ease-in-out infinite}
+.launch-stage .square::after{content:"";position:absolute;top:10px;left:0;width:50px;height:50px;background:#9ab3f5}
+.launch-stage .circle{position:absolute;bottom:10px;left:0;width:100px;height:100px;border-radius:50%;
+  transform:rotate(-360deg);animation:wz_path_circle var(--wz-dur) ease-in-out infinite}
+.launch-stage .circle::after{content:"";position:absolute;bottom:-10px;left:25px;width:50px;height:50px;
+  border-radius:50%;background:#c56183}
+.launch-stage .triangle{position:absolute;bottom:-62px;left:-10px;width:110px;height:110px;border-radius:50%;
+  transform:rotate(-360deg);animation:wz_path_triangle var(--wz-dur) ease-in-out infinite}
+.launch-stage .triangle::after{content:"";position:absolute;top:0;right:-10px;width:0;height:0;border-style:solid;
+  border-width:0 28px 48px 28px;border-color:transparent transparent #89beb3 transparent}
+
+/* ── progress + film grain ── */
+.launch-stage .progress{position:relative;margin-top:26px;width:300px;height:12px;
+  background:#e6e6e6;border-radius:6px;overflow:hidden;flex:0 0 auto}
+.launch-stage .progress::after{content:"";position:absolute;top:0;left:0;width:0;height:100%;
+  background:#637373;animation:wz_progress var(--wz-total,3.3s) linear forwards}
+
+.launch-stage .noise{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:100%;height:100%;z-index:1000;pointer-events:none;opacity:.55;
+  background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAAG3RSTlNAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAvEOwtAAAFVklEQVR4XpWWB67c2BUFb3g557T/hRo9/WUMZHlgr4Bg8Z4qQgQJlHI4A8SzFVrapvmTF9O7dmYRFZ60YiBhJRCgh1FYhiLAmdvX0CzTOpNE77ME0Zty/nWWzchDtiqrmQDeuv3powQ5ta2eN0FY0InkqDD73lT9c9lEzwUNqgFHs9VQce3TVClFCQrSTfOiYkVJQBmpbq2L6iZavPnAPcoU0dSw0SUTqz/GtrGuXfbyyBniKykOWQWGqwwMA7QiYAxi+IlPdqo+hYHnUt5ZPfnsHJyNiDtnpJyayNBkF6cWoYGAMY92U2hXHF/C1M8uP/ZtYdiuj26UdAdQQSXQErwSOMzt/XWRWAz5GuSBIkwG1H3FabJ2OsUOUhGC6tK4EMtJO0ttC6IBD3kM0ve0tJwMdSfjZo+EEISaeTr9P3wYrGjXqyC1krcKdhMpxEnt5JetoulscpyzhXN5FRpuPHvbeQaKxFAEB6EN+cYN6xD7RYGpXpNndMmZgM5Dcs3YSNFDHUo2LGfZuukSWyUYirJAdYbF3MfqEKmjM+I2EfhA94iG3L7uKrR+GdWD73ydlIB+6hgref1QTlmgmbM3/LeX5GI1Ux1RWpgxpLuZ2+I+IjzZ8wqE4nilvQdkUdfhzI5QDWy+kw5Wgg2pGpeEVeCCA7b85BO3F9DzxB3cdqvBzWcmzbyMiqhzuYqtHRVG2y4x+KOlnyqla8AoWWpuBoYRxzXrfKuILl6SfiWCbjxoZJUaCBj1CjH7GIaDbc9kqBY3W/Rgjda1iqQcOJu2WW+76pZC9QG7M00dffe9hNnseupFL53r8F7YHSwJWUKP2q+k7RdsxyOB11n0xtOvnW4irMMFNV4H0uqwS5ExsmP9AxbDTc9JwgneAT5vTiUSm1E7BSflSt3bfa1tv8Di3R8n3Af7MNWzs49hmauE2wP+ttrq+AsWpFG2awvsuOqbipWHgtuvuaAE+A1Z/7gC9hesnr+7wqCwG8c5yAg3AL1fm8T9AZtp/bbJGwl1pNrE7RuOX7PeMRUERVaPpEs+yqeoSmuOlokqw49pgomjLeh7icHNlG19yjs6XXOMedYm5xH2YxpV2tc0Ro2jJfxC50ApuxGob7lMsxfTbeUv07TyYxpeLucEH1gNd4IKH2LAg5TdVhlCafZvpskfncCfx8pOhJzd76bJWeYFnFciwcYfubRc12Ip/ppIhA1/mSZ/RxjFDrJC5xifFjJpY2Xl5zXdguFqYyTR1zSp1Y9p+tktDYYSNflcxI0iyO4TPBdlRcpeqjK/piF5bklq77VSEaA+z8qmJTFzIWiitbnzR794USKBUaT0NTEsVjZqLaFVqJoPN9ODG70IPbfBHKK+/q/AWR0tJzYHRULOa4MP+W/HfGadZUbfw177G7j/OGbIs8TahLyynl4X4RinF793Oz+BU0saXtUHrVBFT/DnA3ctNPoGbs4hRIjTok8i+algT1lTHi4SxFvONKNrgQFAq2/gFnWMXgwffgYMJpiKYkmW3tTg3ZQ9Jq+f8XN+A5eeUKHWvJWJ2sgJ1Sop+wwhqFVijqWaJhwtD8MNlSBeWNNWTa5Z5kPZw5+LbVT99wqTdx29lMUH4OIG/D86ruKEauBjvH5xy6um/Sfj7ei6UUVk4AIl3MyD4MSSTOFgSwsH/QJWaQ5as7ZcmgBZkzjjU1UrQ74ci1gWBCSGHtuV1H2mhSnO3Wp/3fEV5a+4wz//6qy8JxjZsmxxy5+4w9CDNJY09T072iKG0EnOS0arEYgXqYnXcYHwjTtUNAcMelOd4xpkoqiTYICWFq0JSiPfPDQdnt+4/wuqcXY47QILbgAAAABJRU5ErkJggg==)}
+
+/** 10s original timing, retimed via --wz-dur — 10% = one tenth of the cycle */
+@keyframes wz_right_arm{
+  0%{transform:rotate(70deg)} 10%{transform:rotate(8deg)} 15%{transform:rotate(20deg)}
+  20%{transform:rotate(10deg)} 25%{transform:rotate(26deg)} 30%{transform:rotate(10deg)}
+  35%{transform:rotate(28deg)} 40%{transform:rotate(9deg)} 45%{transform:rotate(28deg)}
+  50%{transform:rotate(8deg)} 58%{transform:rotate(74deg)} 62%{transform:rotate(70deg)}
+}
+@keyframes wz_left_arm{
+  0%{transform:rotate(-70deg)} 10%{transform:rotate(6deg)} 15%{transform:rotate(-18deg)}
+  20%{transform:rotate(5deg)} 25%{transform:rotate(-18deg)} 30%{transform:rotate(5deg)}
+  35%{transform:rotate(-17deg)} 40%{transform:rotate(5deg)} 45%{transform:rotate(-18deg)}
+  50%{transform:rotate(6deg)} 58%{transform:rotate(-74deg)} 62%{transform:rotate(-70deg)}
+}
+@keyframes wz_right_hand{
+  0%{transform:rotate(-40deg)} 10%{transform:rotate(-20deg)} 15%{transform:rotate(-5deg)}
+  20%{transform:rotate(-60deg)} 25%{transform:rotate(0deg)} 30%{transform:rotate(-60deg)}
+  35%{transform:rotate(0deg)} 40%{transform:rotate(-40deg)} 45%{transform:rotate(-60deg)}
+  50%{transform:rotate(10deg)} 60%{transform:rotate(-40deg)}
+}
+@keyframes wz_right_finger{
+  0%{transform:translateY(16px)} 10%{transform:none} 50%{transform:none} 60%{transform:translateY(16px)}
+}
+@keyframes wz_left_finger{
+  0%{transform:scaleX(0)} 10%{transform:scaleX(1) rotate(6deg)} 15%{transform:scaleX(1) rotate(0deg)}
+  20%{transform:scaleX(1) rotate(8deg)} 25%{transform:scaleX(1) rotate(0deg)}
+  30%{transform:scaleX(1) rotate(7deg)} 35%{transform:scaleX(1) rotate(0deg)}
+  40%{transform:scaleX(1) rotate(5deg)} 45%{transform:scaleX(1) rotate(0deg)}
+  50%{transform:scaleX(1) rotate(6deg)} 58%{transform:scaleX(0)}
+}
+@keyframes wz_head{
+  0%{transform:rotate(-3deg)} 10%{transform:translateX(10px) rotate(7deg)}
+  50%{transform:translateX(0) rotate(0deg)} 56%{transform:rotate(-3deg)}
+}
+@keyframes wz_path_circle{
+  0%{transform:translateY(0)} 10%{transform:translateY(-100px) rotate(-5deg)}
+  55%{transform:translateY(-100px) rotate(-360deg)} 58%{transform:translateY(-100px) rotate(-360deg)}
+  63%{transform:rotate(-360deg)}
+}
+@keyframes wz_path_square{
+  0%{transform:translateY(0)} 10%{transform:translateY(-155px) translateX(-15px) rotate(10deg)}
+  55%{transform:translateY(-155px) translateX(-15px) rotate(-350deg)}
+  57%{transform:translateY(-155px) translateX(-15px) rotate(-350deg)}
+  63%{transform:rotate(-360deg)}
+}
+@keyframes wz_path_triangle{
+  0%{transform:translateY(0)} 10%{transform:translateY(-172px) translateX(10px) rotate(-10deg)}
+  55%{transform:translateY(-172px) translateX(10px) rotate(-365deg)}
+  58%{transform:translateY(-172px) translateX(10px) rotate(-365deg)}
+  63%{transform:rotate(-360deg)}
+}
+@keyframes wz_progress{ from{width:0} to{width:100%} }
+
+@media(prefers-reduced-motion:reduce){
+  .launch-stage .right-arm,.launch-stage .left-arm,.launch-stage .right-hand,
+  .launch-stage .right-hand::after,.launch-stage .left-hand::after,.launch-stage .head,
+  .launch-stage .square,.launch-stage .circle,.launch-stage .triangle{animation:none}
+  .launch-stage .noise{display:none}
+}
+
+.btn .ripple{position:absolute;border-radius:50%;width:6px;height:6px;background:rgba(255,255,255,.3);pointer-events:none;transform:scale(0);animation:ripple .5s ease forwards}
+@keyframes ripple{to{transform:scale(28);opacity:0}}
+.card.deactivated{opacity:.42;filter:grayscale(.5);pointer-events:none}
+
+.notice{display:flex;gap:14px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-md);padding:16px 20px;color:var(--white-60);font-size:.875rem;line-height:1.65;margin-top:4px;backdrop-filter:blur(16px)}
+.notice-icon{color:rgba(255,214,10,.7);flex-shrink:0;margin-top:1px}
+.notice a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+@media(max-width:760px){.navbar{padding:0 20px}.container{padding:0 18px}.hero{padding:44px 0 28px}.hero h1{font-size:2rem}.grid{grid-template-columns:1fr}.brand-sep,.brand-sub{display:none}}
+
+#about-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(14,14,24,.90);border:1px solid rgba(255,255,255,.13);border-radius:16px;backdrop-filter:saturate(180%) blur(28px);box-shadow:0 16px 48px rgba(0,0,0,.55);padding:14px 22px 16px;display:flex;align-items:center;gap:12px;z-index:9999;opacity:0;pointer-events:none;overflow:hidden}
+.at-icon{width:34px;height:34px;border-radius:50%;overflow:hidden;border:1px solid rgba(10,132,255,.22);flex-shrink:0}
+.at-icon img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.at-title{font-size:.84rem;font-weight:600;color:#f5f5f7}
+.at-sub{font-size:.73rem;color:rgba(245,245,247,.35)}
+.at-bar{position:absolute;bottom:0;left:0;height:2px;background:#0a84ff;width:100%;transform-origin:left}
+
+/* ═══════════ SIGNED-IN USER CHIP + PROFILE PANEL ═══════════ */
+.user-chip{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;border-radius:980px;
+  background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  transition:background .2s,border-color .2s,transform .18s;max-width:230px}
+.user-chip:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.20)}
+.user-chip:active{transform:scale(.97)}
+.uc-avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(145deg,var(--accent),#5e5ce6);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;font-weight:700;letter-spacing:-.01em;
+  background-size:cover;background-position:center;
+  box-shadow:0 2px 10px rgba(10,132,255,.35)}
+.uc-avatar.has-photo{color:transparent;font-size:0;background-image:var(--uc-photo)}
+.uc-text{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.uc-name{font-size:.82rem;font-weight:600;color:var(--white);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uc-email{font-size:.68rem;color:var(--white-35);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-chip.loading .uc-name,.user-chip.loading .uc-email{
+  background:rgba(255,255,255,.08);border-radius:4px;color:transparent;min-width:74px;height:9px;margin:2px 0}
+
+#profile-panel{position:fixed;top:74px;right:24px;width:288px;z-index:600;
+  background:rgba(14,14,24,.90);border:1px solid rgba(255,255,255,.12);border-radius:20px;
+  backdrop-filter:saturate(180%) blur(32px);-webkit-backdrop-filter:saturate(180%) blur(32px);
+  box-shadow:0 24px 64px rgba(0,0,0,.62),0 0 0 .5px rgba(255,255,255,.07);
+  padding:22px 20px 18px;text-align:center;
+  opacity:0;transform:translateY(-10px) scale(.96);pointer-events:none;
+  transition:opacity .26s var(--ease-smooth),transform .26s var(--ease-spring)}
+#profile-panel.open{opacity:1;transform:translateY(0) scale(1);pointer-events:all}
+.pp-avatar{width:62px;height:62px;border-radius:50%;margin:0 auto 12px;
+  background:linear-gradient(145deg,var(--accent),#5e5ce6);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;font-weight:700;background-size:cover;background-position:center;
+  box-shadow:0 6px 22px rgba(10,132,255,.4)}
+.pp-avatar.has-photo{color:transparent;font-size:0;background-image:var(--uc-photo)}
+.pp-name{font-size:1.02rem;font-weight:700;color:var(--white);letter-spacing:-.01em;
+  word-break:break-word}
+.pp-email{font-size:.8rem;color:var(--white-60);margin-top:3px;word-break:break-all}
+.pp-points{display:inline-flex;align-items:center;gap:6px;margin-top:12px;
+  font-size:.8rem;font-weight:600;color:var(--yellow);
+  background:var(--yellow-soft);border:1px solid rgba(255,214,10,.22);
+  padding:5px 13px;border-radius:980px}
+.pp-divider{height:1px;background:rgba(255,255,255,.09);margin:16px -20px 14px}
+.pp-actions{display:flex;gap:8px}
+.pp-actions .btn{flex:1;justify-content:center}
+.pp-hint{font-size:.68rem;color:var(--white-35);margin-top:11px}
+
+/* ═══════════ PERSONAL GREETING ═══════════ */
+.hero-greeting{
+  display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+  text-align:right;flex:0 0 auto;max-width:46%;
+  opacity:0;transform:translateY(10px);
+  transition:opacity .6s ease,transform .6s var(--ease-spring)}
+.hero-greeting.show{opacity:1;transform:translateY(0)}
+.hg-wish{
+  font-size:1rem;font-weight:500;color:var(--white-60);letter-spacing:-.01em;
+  margin-bottom:6px}
+.hg-name{
+  font-size:2.5rem;font-weight:700;letter-spacing:-.035em;line-height:1.08;
+  background:linear-gradient(135deg,#7cc4ff 0%,#0a84ff 55%,#5e5ce6 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  word-break:break-word}
+
+
+/* ═══════════ DAILY POINTS TOAST ═══════════ */
+#points-toast{position:fixed;right:24px;bottom:24px;z-index:700;
+  display:flex;align-items:center;gap:13px;padding:13px 18px 13px 13px;
+  background:rgba(14,14,24,.92);border:1px solid rgba(255,214,10,.28);border-radius:18px;
+  backdrop-filter:saturate(180%) blur(28px);-webkit-backdrop-filter:saturate(180%) blur(28px);
+  box-shadow:0 20px 54px rgba(0,0,0,.6),0 0 22px rgba(255,214,10,.10);
+  opacity:0;transform:translateY(16px) scale(.94);pointer-events:none}
+.pt-badge{width:44px;height:44px;border-radius:14px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;font-weight:700;letter-spacing:-.02em;color:#1a1400;
+  background:linear-gradient(145deg,#ffe873,var(--yellow));
+  box-shadow:0 4px 16px rgba(255,214,10,.34)}
+.pt-title{font-size:.88rem;font-weight:600;color:var(--white);letter-spacing:-.01em}
+.pt-sub{font-size:.74rem;color:var(--white-60);margin-top:2px}
+
+@media(max-width:760px){
+  #points-toast{left:16px;right:16px;bottom:16px}
+  .uc-text{display:none}
+  .user-chip{padding:4px;max-width:none}
+  #profile-panel{width:calc(100vw - 32px);right:16px}
+}
+</style>
+<style id="glass-everything">
+/* ══════════════════════════════════════════════════════════════
+   FULL GLASS TREATMENT
+   Every surface: translucent fill, hairline edge, backdrop blur +
+   saturation, an inset top highlight so the edge catches light,
+   and a soft drop shadow underneath.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --g-fill:rgba(255,255,255,.055);
+  --g-fill-hi:rgba(255,255,255,.10);
+  --g-edge:rgba(255,255,255,.12);
+  --g-edge-hi:rgba(255,255,255,.22);
+  /* Blur radius is the single biggest cost of backdrop-filter, and it scales
+     badly. 14/20px is visually almost identical to 22/34px but far cheaper. */
+  --g-blur:saturate(180%) blur(14px);
+  --g-blur-lg:saturate(190%) blur(20px);
+  --g-inset:inset 0 .5px 0 rgba(255,255,255,.18);
+  --g-inset-strong:inset 0 .5px 0 rgba(255,255,255,.28);
+  --g-shadow:0 8px 30px rgba(0,0,0,.34);
+  --g-shadow-lg:0 20px 56px rgba(0,0,0,.46);
+  --g-sheen:linear-gradient(135deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.03) 34%,rgba(255,255,255,0) 62%);
+}
+
+/* a faint aurora behind everything gives the blur something to chew on */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  /* no filter here on purpose: a filtered fixed layer repaints on every
+     scroll frame, and radial gradients are already perfectly smooth */
+  background:
+    radial-gradient(58% 46% at 18% 10%, rgba(10,132,255,.17) 0%, transparent 70%),
+    radial-gradient(54% 44% at 84% 22%, rgba(94,92,230,.15) 0%, transparent 68%),
+    radial-gradient(64% 50% at 50% 98%, rgba(48,209,88,.10) 0%, transparent 72%);
+  transform:translateZ(0);
+}
+
+/* ── NAVBAR ── */
+.navbar{
+  background:rgba(10,10,20,.58);
+  border-bottom:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:0 6px 26px rgba(0,0,0,.30),var(--g-inset);
+}
+.brand-icon{
+  background:var(--g-fill-hi);border:1px solid var(--g-edge);
+  box-shadow:var(--g-shadow),var(--g-inset);
+}
+.clock-display{
+  padding:5px 12px;border-radius:10px;
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  box-shadow:var(--g-inset);
+}
+.status-badge{
+  box-shadow:var(--g-inset);
+}
+
+/* ── HERO ── */
+.hero{
+  display:flex;align-items:center;justify-content:space-between;gap:34px;
+  margin-top:26px;padding:38px 34px 34px;border-radius:26px;
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:var(--g-shadow-lg),var(--g-inset);
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:var(--g-sheen);
+}
+.hero > *{position:relative;z-index:1}
+.hero-main{flex:1 1 auto;min-width:0}
+.hero-eyebrow{
+  padding:5px 13px 5px 11px;border-radius:980px;
+  background:var(--accent-soft);border:1px solid rgba(10,132,255,.26);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-inset);
+}
+
+/* ── SEGMENTED CONTROL ── */
+.seg-control{
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-shadow),var(--g-inset);
+}
+.seg-btn.active{
+  background:var(--g-fill-hi);
+  box-shadow:0 2px 10px rgba(0,0,0,.32),var(--g-inset-strong),0 0 0 .5px var(--g-edge-hi);
+}
+.seg-clock{
+  padding:6px 13px;border-radius:10px;
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  box-shadow:var(--g-inset);
+}
+
+/* ── SECTION HEADER ── */
+.section-header{
+  padding:18px 22px;border-radius:18px;
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-shadow),var(--g-inset);
+}
+.section-tag{
+  box-shadow:var(--g-inset);
+}
+
+/* ── CARDS ── */
+.card{
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  contain:paint;
+  box-shadow:var(--g-shadow-lg),var(--g-inset);
+}
+.card::before{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:var(--g-sheen);border-radius:inherit;
+}
+.card.launching::before{display:none}
+.card > *:not(.launch-stage){position:relative;z-index:2}
+/* the loader must stay pinned to the card, above the sheen */
+.card > .launch-stage{position:absolute;inset:0;z-index:9}
+.card:not(.deactivated):hover{
+  border-color:var(--g-edge-hi);
+  box-shadow:0 26px 68px rgba(0,0,0,.52),var(--g-inset-strong),0 6px 26px rgba(10,132,255,.14);
+}
+
+/* the coloured banner frosted over rather than flat */
+.banner::after{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.04) 42%,rgba(0,0,0,.14) 100%);
+}
+.banner-logo{
+  padding:6px;border-radius:12px;
+  background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.20);
+  box-shadow:0 6px 20px rgba(0,0,0,.36),var(--g-inset-strong);
+}
+.banner-status{
+  background:rgba(0,0,0,.34)!important;
+  box-shadow:var(--g-inset);
+}
+.logo-tooltip{
+  background:rgba(14,14,24,.72);border:1px solid var(--g-edge-hi);
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:var(--g-shadow-lg),var(--g-inset);
+}
+.logo-tooltip::after{border-top-color:rgba(14,14,24,.72)}
+
+/* ── CHIPS INSIDE CARDS ── */
+.pill,.hours-chip{
+  box-shadow:var(--g-inset);
+}
+.hours-chip{background:var(--g-fill);border:1px solid var(--g-edge)}
+.divider{
+  background:linear-gradient(90deg,transparent,var(--g-edge) 18%,var(--g-edge) 82%,transparent);
+  height:1px;
+}
+
+/* ── BUTTONS ── */
+.btn-ghost{
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-shadow),var(--g-inset);
+}
+.btn-ghost:hover{background:var(--g-fill-hi);border-color:var(--g-edge-hi)}
+
+/* ── NOTICE ── */
+.notice{
+  background:var(--g-fill);border:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:var(--g-shadow),var(--g-inset);
+}
+
+/* ── FLOATING PANELS ── */
+#profile-panel,#points-toast,#about-toast{
+  background:rgba(14,14,24,.62);
+  border:1px solid var(--g-edge-hi);
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:var(--g-shadow-lg),var(--g-inset);
+}
+.user-chip{
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-shadow),var(--g-inset);
+}
+.pp-points{
+  box-shadow:var(--g-inset);
+}
+.pt-badge{box-shadow:0 6px 20px rgba(255,214,10,.30),var(--g-inset-strong)}
+.at-icon{
+  background:var(--g-fill-hi);border:1px solid var(--g-edge);
+  box-shadow:var(--g-inset);
+}
+
+/* Safari/Firefox without backdrop-filter: fall back to opaque-ish fills so
+   nothing becomes unreadable. */
+@supports not (backdrop-filter: blur(1px)){
+  .navbar,.hero,.card,.section-header,.notice,.seg-control,
+  #profile-panel,#points-toast,#about-toast{
+    background:rgba(20,20,32,.90);
+  }
+}
+
+@media(max-width:980px){
+  .hero{flex-direction:column;align-items:flex-start;gap:20px}
+  .hero-greeting{max-width:none;align-items:flex-start;text-align:left;order:-1}
+  .hg-name{font-size:1.9rem}
+}
+@media(max-width:760px){
+  .hero{padding:28px 20px 26px;margin-top:16px;border-radius:20px}
+  .hg-name{font-size:1.6rem}
+  .section-header{padding:15px 16px}
+}
+
+/* On narrow screens the cards stack full-width, so several live blur layers
+   are on screen at once — the most expensive case, on the least capable
+   hardware. Swap them for a solid frosted fill that looks the same. */
+@media(max-width:900px){
+  .card,.section-header,.notice{
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    background:rgba(26,26,40,.72);
+  }
+  .hero{
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    background:rgba(22,22,36,.70);
+  }
+}
+
+/* Respect a request for less motion: the orbs are decorative. */
+@media(prefers-reduced-motion:reduce){
+  .orb{animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+
+<div id="about-toast">
+<div class="at-icon"><img src="https://i.ibb.co/C5XqXXx5/d2a09cd4-f07d-4034-99ad-51292342123d.png" alt="logo"></div>
+<div><div class="at-title">Cloud iNIT · Hands-On Playground</div><div class="at-sub">Secure live sandboxes · No billing risks</div></div>
+<div class="at-bar" id="at-bar"></div>
+</div>
+
+<div class="scene"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div><canvas id="canvas"></canvas></div>
+
+<nav class="navbar">
+<div class="navbar-brand">
+<div class="brand-icon"><img src="https://i.ibb.co/C5XqXXx5/d2a09cd4-f07d-4034-99ad-51292342123d.png" alt="logo"></div>
+<span class="brand-name">Cloud iNIT</span><span class="brand-sep"></span><span class="brand-sub">Hands-On Playground</span>
+</div>
+<div class="navbar-right">
+<span class="clock-display" id="nav-clock">--:--:-- IST</span>
+<span class="status-badge live" id="live-badge"><span class="status-dot"></span>LIVE</span>
+<span class="status-badge offline" id="offline-badge" style="display:none"><span class="status-dot"></span>OFFLINE</span>
+
+<div class="user-chip loading" id="user-chip" title="Your account">
+  <div class="uc-avatar" id="uc-avatar">U</div>
+  <div class="uc-text">
+    <span class="uc-name"  id="uc-name">Loading…</span>
+    <span class="uc-email" id="uc-email"></span>
+  </div>
+</div>
+</div>
+</nav>
+
+<div id="points-toast">
+  <div class="pt-badge">+20</div>
+  <div>
+    <div class="pt-title">20 points earned</div>
+    <div class="pt-sub">Daily Hands-On bonus · once a day</div>
+  </div>
+</div>
+
+<div id="profile-panel">
+  <div class="pp-avatar" id="pp-avatar">U</div>
+  <div class="pp-name"  id="pp-name">User</div>
+  <div class="pp-email" id="pp-email"></div>
+  <div class="pp-points" id="pp-points"><i data-feather="star" width="13" height="13"></i> <span id="pp-points-val">0</span> pts</div>
+  <div class="pp-divider"></div>
+  <div class="pp-actions">
+    <a href="dashboard.html" class="btn btn-ghost"><i data-feather="grid" width="14" height="14"></i> Dashboard</a>
+    <button class="btn btn-ghost" id="pp-signout"><i data-feather="log-out" width="14" height="14"></i> Sign out</button>
+  </div>
+  <div class="pp-hint">Signed in to Cloud iNIT</div>
+</div>
+
+<div class="container">
+<header class="hero">
+<div class="hero-main">
+<div class="hero-eyebrow">Cloud Learning Environments</div>
+<h1 id="hero-title">Practice in <em>Real Cloud</em><br>Environments</h1>
+<p class="hero-desc" id="hero-desc">Secure, live sandboxes for AWS, Azure, and GCP. No billing risks — just focused, hands-on learning.</p>
+</div>
+<div class="hero-greeting" id="hero-greeting">
+  <span class="hg-wish"></span>
+  <span class="hg-name"></span>
+</div>
+</header>
+
+<div class="seg-wrap">
+<div class="seg-control"><button class="seg-btn active" onclick="switchTab(this,'aws')"><i data-feather="cloud" width="14" height="14"></i> AWS Sandbox</button></div>
+<span class="seg-divider"></span><span class="seg-clock" id="seg-clock">IST --:--:--</span>
+</div>
+
+<div class="section-header">
+<h2>Cloud Sandboxes <span class="section-tag live" id="section-status">Live</span></h2>
+<p>Launch a personal sandbox instantly — <strong>no unexpected costs, no billing surprises.</strong></p>
+</div>
+
+
+<section class="grid active" id="aws">
+
+<div class="card" data-start="09:00" data-end="19:30" data-href="aws/main.html" tabindex="0" role="link">
+<div class="banner" style="background:linear-gradient(145deg,#1a0d00,#3d2000,#7d4400)">
+<div class="banner-noise"></div>
+<div class="logo-wrap"><span class="logo-tooltip">AWS Sandbox</span><img class="banner-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" alt="AWS"></div>
+</div>
+<div class="card-body">
+<div class="card-title">AWS Sandbox <span class="pill pill-green js-pill">Available</span></div>
+<p class="card-desc">Amazon Web Services — up to <strong>9 instances</strong>.</p>
+<div class="spacer"></div>
+<div class="meta-row">
+<span class="hours-chip"><i data-feather="clock" width="12" height="12"></i> 9:10 AM – 6:25 PM IST</span>
+<a href="policy.html" class="btn btn-ghost js-policy"><i data-feather="file-text" width="13" height="13"></i> Policy</a>
+</div></div></div>
+
+<div class="card" data-start="09:00" data-end="19:30" data-href="aws-1/main.html" tabindex="0" role="link">
+<div class="banner" style="background:linear-gradient(145deg,#1a0d00,#3d2000,#7d4400)">
+<div class="banner-noise"></div>
+<div class="logo-wrap"><span class="logo-tooltip">AWS-1 Sandbox</span><img class="banner-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" alt="AWS"></div>
+</div>
+<div class="card-body">
+<div class="card-title">AWS-1 Sandbox <span class="pill pill-green js-pill">Available</span></div>
+<p class="card-desc">Amazon Web Services — up to <strong>9 instances</strong>.</p>
+<div class="spacer"></div>
+<div class="meta-row">
+<span class="hours-chip"><i data-feather="clock" width="12" height="12"></i> 9:10 AM – 6:25 PM IST</span>
+<a href="policy.html" class="btn btn-ghost js-policy"><i data-feather="file-text" width="13" height="13"></i> Policy</a>
+</div></div></div>
+
+<div class="card" data-start="09:00" data-end="19:30" data-href="aws-2/main.html" tabindex="0" role="link">
+<div class="banner" style="background:linear-gradient(145deg,#1a0d00,#3d2000,#7d4400)">
+<div class="banner-noise"></div>
+<div class="logo-wrap"><span class="logo-tooltip">AWS-2 Sandbox</span><img class="banner-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" alt="AWS"></div>
+</div>
+<div class="card-body">
+<div class="card-title">AWS-2 Sandbox <span class="pill pill-green js-pill">Available</span></div>
+<p class="card-desc">Amazon Web Services — up to <strong>9 instances</strong>.</p>
+<div class="spacer"></div>
+<div class="meta-row">
+<span class="hours-chip"><i data-feather="clock" width="12" height="12"></i> 9:10 AM – 6:25 PM IST</span>
+<a href="policy.html" class="btn btn-ghost js-policy"><i data-feather="file-text" width="13" height="13"></i> Policy</a>
+</div></div></div>
+
+<div class="card" data-start="09:00" data-end="19:30" data-href="aws-g-1/main.html" tabindex="0" role="link">
+<div class="banner" style="background:linear-gradient(145deg,#140026,#2d0060,#6e3fff)">
+<div class="banner-noise"></div>
+<div class="logo-wrap"><span class="logo-tooltip">AWS Girls – 1</span><img class="banner-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" alt="AWS"></div>
+</div>
+<div class="card-body">
+<div class="card-title">AWS Girls – 1 <span class="pill pill-green js-pill">Available</span><span class="pill pill-yellow">Girls Only</span></div>
+<p class="card-desc">Exclusive sandbox for women learners — up to <strong>9 instances</strong>.</p>
+<div class="spacer"></div>
+<div class="meta-row">
+<span class="hours-chip"><i data-feather="clock" width="12" height="12"></i> 9:10 AM – 6:25 PM IST</span>
+<a href="policy.html" class="btn btn-ghost js-policy"><i data-feather="file-text" width="13" height="13"></i> Policy</a>
+</div></div></div>
+
+<div class="card" data-start="09:00" data-end="19:30" data-href="aws-g-2/main.html" tabindex="0" role="link">
+<div class="banner" style="background:linear-gradient(145deg,#140026,#2d0060,#6e3fff)">
+<div class="banner-noise"></div>
+<div class="logo-wrap"><span class="logo-tooltip">AWS Girls – 2</span><img class="banner-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" alt="AWS"></div>
+</div>
+<div class="card-body">
+<div class="card-title">AWS Girls – 2 <span class="pill pill-green js-pill">Available</span><span class="pill pill-yellow">Girls Only</span></div>
+<p class="card-desc">Exclusive sandbox for women learners — up to <strong>9 instances</strong>.</p>
+<div class="spacer"></div>
+<div class="meta-row">
+<span class="hours-chip"><i data-feather="clock" width="12" height="12"></i> 9:10 AM – 6:25 PM IST</span>
+<a href="policy.html" class="btn btn-ghost js-policy"><i data-feather="file-text" width="13" height="13"></i> Policy</a>
+</div></div></div>
+
+<div class="card" data-start="09:00" data-end="19:30" data-href="aws-g-3/main.html" tabindex="0" role="link">
+<div class="banner" style="background:linear-gradient(145deg,#140026,#2d0060,#6e3fff)">
+<div class="banner-noise"></div>
+<div class="logo-wrap"><span class="logo-tooltip">AWS Girls – 3</span><img class="banner-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" alt="AWS"></div>
+</div>
+<div class="card-body">
+<div class="card-title">AWS Girls – 3 <span class="pill pill-green js-pill">Available</span><span class="pill pill-yellow">Girls Only</span></div>
+<p class="card-desc">Exclusive sandbox for women learners — up to <strong>9 instances</strong>.</p>
+<div class="spacer"></div>
+<div class="meta-row">
+<span class="hours-chip"><i data-feather="clock" width="12" height="12"></i> 9:10 AM – 6:25 PM IST</span>
+<a href="policy.html" class="btn btn-ghost js-policy"><i data-feather="file-text" width="13" height="13"></i> Policy</a>
+</div></div></div>
+
+</section>
+
+<div class="notice" id="usage-notice">
+<span class="notice-icon"><i data-feather="shield" width="16" height="16"></i></span>
+<div><strong style="color:rgba(245,245,247,.85)">Usage Notice —</strong> This playground is strictly monitored and dedicated to educational use only. Misuse will result in immediate access revocation. Questions? <a href="mailto:abinash@example.com">Contact Abinash</a></div>
+</div>
+</div>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MBJM2CCKJ6"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-MBJM2CCKJ6');</script>
+<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","wvhlpevow5");</script>
+
+<script>
+/* ================= PARTICLES ================= */
+(function(){
+const c=document.getElementById('canvas'),x=c.getContext('2d');
+const COLORS=['#0a84ff','#5e5ce6','#30d158','#64d2ff','#fff'];const m={x:-999,y:-999};let W,H;
+const ps=Array.from({length:60},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.2+.3,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,c:COLORS[Math.floor(Math.random()*5)],a:Math.random()*.3+.08}));
+function rz(){W=c.width=innerWidth;H=c.height=innerHeight}rz();
+addEventListener('resize',rz);addEventListener('mousemove',e=>{m.x=e.clientX;m.y=e.clientY});
+(function tick(){x.clearRect(0,0,W,H);
+ps.forEach(p=>{const dx=p.x-m.x,dy=p.y-m.y,d=Math.hypot(dx,dy);if(d<100&&d>0){const f=(100-d)/100*.04;p.vx+=dx/d*f;p.vy+=dy/d*f}
+p.vx*=.988;p.vy*=.988;p.x+=p.vx;p.y+=p.vy;
+if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+x.beginPath();x.arc(p.x,p.y,p.r,0,6.283);x.fillStyle=p.c;x.globalAlpha=p.a;x.fill()});
+for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){const d=Math.hypot(ps[i].x-ps[j].x,ps[i].y-ps[j].y);
+if(d<80){x.beginPath();x.moveTo(ps[i].x,ps[i].y);x.lineTo(ps[j].x,ps[j].y);x.strokeStyle='#0a84ff';x.globalAlpha=(1-d/80)*.06;x.lineWidth=.6;x.stroke()}}
+x.globalAlpha=1;requestAnimationFrame(tick)})();
+})();
+
+/* ================= ORBS (anime.js) ================= */
+function initOrbs(){if(typeof anime==='undefined')return;
+anime({targets:'.orb-1',translateX:[0,30,-14,20],translateY:[0,-24,16,10],scale:[1,1.06,.97,1.03],duration:20000,easing:'easeInOutSine',direction:'alternate',loop:true});
+anime({targets:'.orb-2',translateX:[0,-26,18,-10],translateY:[0,22,-14,8],scale:[1,1.08,.95,1.04],duration:26000,easing:'easeInOutSine',direction:'alternate',loop:true,delay:700});
+anime({targets:'.orb-3',translateX:[0,20,-18,12],translateY:[0,-18,14,-6],scale:[1,1.05,.96,1.02],duration:23000,easing:'easeInOutSine',direction:'alternate',loop:true,delay:1300});}
+
+/* ================= SCROLL PROGRESS ================= */
+function initProgress(){
+if(typeof gsap!=='undefined'&&typeof ScrollTrigger!=='undefined'){
+gsap.registerPlugin(ScrollTrigger);
+gsap.to('#progress',{scaleX:1,ease:'none',scrollTrigger:{start:0,end:'max',scrub:.3}});return}
+addEventListener('scroll',()=>{const max=document.body.scrollHeight-innerHeight;
+document.getElementById('progress').style.transform='scaleX('+Math.min(max>0?scrollY/max:0,1)+')'},{passive:true})}
+
+/* ================= IST CLOCK / AVAILABILITY ================= */
+function getIST(){const n=new Date();return new Date(n.getTime()+n.getTimezoneOffset()*60000+19800000)}
+function istMin(){const t=getIST();return t.getHours()*60+t.getMinutes()}
+function istStr(){return getIST().toTimeString().slice(0,8)}
+function toMin(s){const p=s.split(':');return +p[0]*60+ +p[1]}
+function isActive(s,e){const n=istMin();return n>=toMin(s)&&n<toMin(e)}
+
+function updateStatus(){const live=isActive('09:00','19:30');
+document.getElementById('live-badge').style.display=live?'':'none';
+document.getElementById('offline-badge').style.display=live?'none':'';
+const t=document.getElementById('section-status');
+t.textContent=live?'Live':'Offline';t.className='section-tag '+(live?'live':'offline')}
+
+function applyAvailability(){
+document.querySelectorAll('.card[data-start]').forEach(card=>{
+const active=isActive(card.dataset.start,card.dataset.end);
+const state=active?'live':'offline';
+
+// Nothing changed since the last tick? Then touch nothing. Writing to a
+// backdrop-filtered element forces it to re-blur, so a no-op write once a
+// second showed up as a scroll stutter.
+if(card.dataset.availState===state)return;
+card.dataset.availState=state;
+
+const pill=card.querySelector('.js-pill'),banner=card.querySelector('.banner');
+let badge=banner.querySelector('.banner-status');
+if(!badge){badge=document.createElement('div');
+badge.innerHTML='<span class="banner-status-dot"></span><span class="bs-txt"></span>';
+banner.appendChild(badge)}
+badge.className='banner-status '+state;
+badge.querySelector('.bs-txt').textContent=active?'LIVE':'OFFLINE';
+// CRITICAL: never touch a card mid-launch
+if(card.classList.contains('launching')){card.dataset.availState='';return}
+if(active){card.classList.remove('deactivated');
+if(pill){pill.className='pill pill-green js-pill';pill.textContent='Available'}}
+else{card.classList.add('deactivated');
+if(pill){pill.className='pill pill-red js-pill';pill.textContent='Deactivated'}}})}
+
+function updateClock(){const t=istStr();
+const a=document.getElementById('nav-clock'),b=document.getElementById('seg-clock');
+if(a)a.textContent=t+' IST';if(b)b.textContent='IST '+t}
+
+/* ================= CARD REVEAL ================= */
+function revealCards(sec){const cards=sec.querySelectorAll('.card');
+cards.forEach(c=>{c.dataset.availState=''});applyAvailability();
+if(typeof gsap==='undefined'){cards.forEach(c=>{c.style.opacity=1});return}
+gsap.killTweensOf(cards);
+gsap.fromTo(cards,{opacity:0,y:28,scale:.97},
+{opacity:1,y:0,scale:1,duration:.65,ease:'power3.out',stagger:.07,clearProps:'transform,opacity'})}
+
+function switchTab(btn,id){
+document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+['aws','azure','gcp'].forEach(n=>{const s=document.getElementById(n);if(!s)return;
+if(n===id){s.classList.add('active');revealCards(s);applyAvailability()}else s.classList.remove('active')});
+if(window.feather)feather.replace({'stroke-width':1.5,width:14,height:14})}
+
+/* ============ LAUNCH SEQUENCE — THE WIZARD 🧙‍♂️ ============
+   Clicking a card hands it to the wizard, who conjures the sandbox.
+   Pure CSS keyframes, so there is nothing to drive per frame. */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let launchBusy = false;
+
+const WIZARD_MARKUP =
+  '<div class="wz-wrap">' +
+    '<div class="wz-scene">' +
+      '<div class="objects">' +
+        '<div class="square"></div><div class="circle"></div><div class="triangle"></div>' +
+      '</div>' +
+      '<div class="wizard">' +
+        '<div class="body"></div>' +
+        '<div class="right-arm"><div class="right-hand"></div></div>' +
+        '<div class="left-arm"><div class="left-hand"></div></div>' +
+        '<div class="head">' +
+          '<div class="beard"></div>' +
+          '<div class="face"><div class="adds"></div></div>' +
+          '<div class="hat">' +
+            '<div class="hat-of-the-hat"></div>' +
+            '<div class="four-point-star star-1"></div>' +
+            '<div class="four-point-star star-2"></div>' +
+            '<div class="four-point-star star-3"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="progress"></div>' +
+  '</div>' +
+  '<div class="noise"></div>';
+
+function launchSandbox(card, ev){
+  ev.preventDefault(); ev.stopPropagation();
+  if(launchBusy || card.classList.contains('launching')) return;
+  if(card.classList.contains('deactivated')) return;
+
+  const href = card.getAttribute('data-href');
+  if(!href) return;
+  launchBusy = true;
+
+  const DUR = REDUCED ? 900 : 3300;
+
+  let stage = card.querySelector('.launch-stage');
+  if(!stage){
+    stage = document.createElement('div');
+    stage.className = 'launch-stage';
+    stage.innerHTML = WIZARD_MARKUP;
+    card.appendChild(stage);
+  }
+
+  /* the scene is drawn at a fixed 390x300; scale it to whatever the card is */
+  const fit = () => {
+    const w = card.clientWidth  - 26;
+    const hgt = card.clientHeight - 26;
+    const s = Math.max(.4, Math.min(1, w / 400, hgt / 278));
+    stage.style.setProperty('--wz-scale', s.toFixed(3));
+  };
+  fit();
+  stage._fit = fit;
+  addEventListener('resize', fit);
+
+  /* the progress bar should finish exactly as we hand off */
+  stage.style.setProperty('--wz-total', (DUR / 1000) + 's');
+
+  card.classList.add('launching');
+  card.setAttribute('aria-busy', 'true');
+
+  setTimeout(() => {
+    try { window.location.href = href; }
+    catch(e){ resetLaunch(card); }
+    setTimeout(() => resetLaunch(card), 2800);
+  }, DUR);
+}
+
+function resetLaunch(card){
+  launchBusy = false;
+  card.classList.remove('launching');
+  card.removeAttribute('aria-busy');
+  const st = card.querySelector('.launch-stage');
+  if(st){
+    if(st._fit) removeEventListener('resize', st._fit);
+    st.remove();
+  }
+}
+
+/* restore UI if the user returns via back/forward cache */
+addEventListener('pageshow', e=>{
+  if(e.persisted) document.querySelectorAll('.card.launching').forEach(resetLaunch);
+});
+
+/* ================= RIPPLE ================= */
+function addRipple(e){
+if(this.classList.contains('js-policy'))return;
+const r=this.getBoundingClientRect(),s=document.createElement('span');
+s.className='ripple';s.style.top=(e.clientY-r.top-3)+'px';s.style.left=(e.clientX-r.left-3)+'px';
+this.appendChild(s);s.addEventListener('animationend',()=>s.remove())}
+
+/* ================= HERO INTRO ================= */
+function splitWords(el){
+const walk=node=>{Array.from(node.childNodes).forEach(ch=>{
+if(ch.nodeType===3){
+if(!ch.textContent.trim())return;
+const f=document.createDocumentFragment();
+ch.textContent.split(/(\s+)/).forEach(p=>{
+if(!p.trim()){f.appendChild(document.createTextNode(p))}
+else{const s=document.createElement('span');s.className='word';s.textContent=p;f.appendChild(s)}});
+node.replaceChild(f,ch)}
+else if(ch.nodeType===1&&ch.tagName!=='BR'&&!ch.classList.contains('word'))walk(ch)})};
+walk(el)}
+
+function initHero(){
+if(typeof gsap==='undefined')return;
+const t=document.getElementById('hero-title');splitWords(t);
+const words=t.querySelectorAll('.word');
+const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+tl.from('.navbar',{opacity:0,y:-20,duration:.6},0)
+.from('.hero-eyebrow',{opacity:0,y:14,duration:.55},.1)
+.from(words,{opacity:0,y:36,duration:.7,stagger:.05},'-=.2')
+.from('#hero-desc',{opacity:0,y:18,duration:.6},'-=.35')
+.from('.seg-wrap',{opacity:0,y:16,duration:.55},'-=.4')
+.from('.section-header',{opacity:0,y:16,duration:.55},'-=.4');
+if(typeof ScrollTrigger!=='undefined')
+gsap.from('#usage-notice',{opacity:0,y:22,duration:.6,ease:'power2.out',
+scrollTrigger:{trigger:'#usage-notice',start:'top 92%'}})}
+
+/* ================= INIT ================= */
+function boot(){
+if(window.feather)feather.replace({'stroke-width':1.5,width:14,height:14});
+
+updateClock();updateStatus();applyAvailability();
+setInterval(()=>{updateClock();updateStatus();applyAvailability()},1000);
+
+initOrbs();initProgress();initHero();
+
+requestAnimationFrame(()=>{
+const s=document.getElementById('aws');
+if(s)revealCards(s);
+if(window.feather)feather.replace({'stroke-width':1.5,width:14,height:14})});
+
+document.querySelectorAll('.btn').forEach(b=>b.addEventListener('click',addRipple));
+// the whole card is the click target; the Policy link opts out
+document.querySelectorAll('.card[data-href]').forEach(card=>{
+card.addEventListener('click',function(e){
+  if(e.target.closest('a,button'))return;      // let Policy and the logo do their thing
+  launchSandbox(this,e)});
+card.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  if(e.target.closest('a,button'))return;
+  launchSandbox(this,e)})});
+
+addEventListener('resize',()=>{
+if(typeof ScrollTrigger!=='undefined')ScrollTrigger.refresh()});
+
+
+const toast=document.getElementById('about-toast'),bar=document.getElementById('at-bar');
+if(toast){setTimeout(()=>{
+if(typeof gsap!=='undefined'){
+gsap.set(toast,{y:20});
+gsap.to(toast,{opacity:1,y:0,duration:.6,ease:'back.out(1.6)'});
+gsap.fromTo(bar,{scaleX:1},{scaleX:0,duration:6,ease:'none'});
+setTimeout(()=>gsap.to(toast,{opacity:0,y:12,duration:.5,
+onComplete:()=>{toast.style.display='none'}}),6000)}
+else{toast.style.opacity='1';toast.style.transform='translateX(-50%)';
+setTimeout(()=>{toast.style.display='none'},6000)}},500)}
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+else boot();
+</script>
+
+<!-- ═══════════ SIGNED-IN IDENTITY ═══════════
+     Same Firebase project as dashboard.html, so the name, email, avatar and
+     points shown here are the identity the student already signed in with. -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  import {
+    getFirestore, doc, onSnapshot, runTransaction, serverTimestamp, increment
+  } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnuw9gryQYmk3SXVyJyw9piH5VpuapDj4",
+    authDomain: "veera730pmoffline.firebaseapp.com",
+    projectId: "veera730pmoffline",
+    storageBucket: "veera730pmoffline.firebasestorage.app",
+    messagingSenderId: "302438121216",
+    appId: "1:302438121216:web:bb010db38d4225d656bde5",
+    measurementId: "G-624V2DN4F8"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  const $ = (id) => document.getElementById(id);
+  let unsubProfile = null;
+
+  const HANDS_ON_BONUS = 20;
+
+  // Local calendar day, matching how dashboard.html keys its daily records.
+  function todayKey(){
+    const d = new Date();
+    return d.getFullYear() + '-' +
+           String(d.getMonth() + 1).padStart(2, '0') + '-' +
+           String(d.getDate()).padStart(2, '0');
+  }
+
+  // Awards the bonus at most once per calendar day.
+  //
+  // The "already claimed today" flag lives in Firestore, on the same daily
+  // document the dashboard already writes — not in localStorage. So it holds
+  // across devices, browsers and private windows, and clearing site data
+  // can't earn it a second time. The read and both writes happen inside one
+  // transaction, so two tabs opening at once can only ever award it once.
+  async function awardDailyBonus(uid){
+    const userRef = doc(db, 'veeraUsers', uid);
+    const dayRef  = doc(db, 'veeraUsers', uid, 'dailyPoints', todayKey());
+    let awarded = false;
+
+    await runTransaction(db, async (tx) => {
+      // Firestore re-runs this callback if the document changed underneath us,
+      // so the flag has to reset on every attempt — otherwise a losing tab
+      // would still claim it awarded the points.
+      awarded = false;
+
+      const snap = await tx.get(dayRef);
+      const data = snap.exists() ? snap.data() : {};
+
+      if (data.handsOnBonus) return;            // already claimed today
+
+      tx.set(dayRef, {
+        points: (data.points || 0) + HANDS_ON_BONUS,
+        handsOnBonus: HANDS_ON_BONUS,
+        handsOnAt: serverTimestamp()
+      }, { merge: true });
+
+      tx.set(userRef, { totalPoints: increment(HANDS_ON_BONUS) }, { merge: true });
+      awarded = true;
+    });
+
+    return awarded;
+  }
+
+  function showPointsToast(){
+    const t = $('points-toast');
+    if (!t) return;
+    if (typeof gsap !== 'undefined') {
+      gsap.to(t, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: 'back.out(1.7)' });
+      gsap.to(t, { opacity: 0, y: 14, duration: 0.45, delay: 5, ease: 'power2.in' });
+    } else {
+      t.style.transition = 'opacity .5s ease, transform .5s ease';
+      t.style.opacity = '1';
+      t.style.transform = 'translateY(0) scale(1)';
+      setTimeout(() => { t.style.opacity = '0'; }, 5000);
+    }
+  }
+
+  function greetingWord(){
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    if (h < 21) return 'Good evening';
+    return 'Working late';
+  }
+
+  function applyPhoto(url, initial){
+    document.documentElement.style.setProperty('--uc-photo', url ? 'url("' + url + '")' : 'none');
+    ['uc-avatar','pp-avatar'].forEach(function(id){
+      const el = $(id);
+      if (!el) return;
+      if (url){ el.classList.add('has-photo'); el.textContent = ''; }
+      else { el.classList.remove('has-photo'); el.textContent = initial; }
+    });
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (unsubProfile) { unsubProfile(); unsubProfile = null; }
+
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const name    = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+    const email   = user.email || '';
+    const initial = name.trim().charAt(0).toUpperCase() || 'U';
+
+    const chip = $('user-chip');
+    if (chip) chip.classList.remove('loading');
+    if ($('uc-name'))  $('uc-name').textContent  = name;
+    if ($('uc-email')) $('uc-email').textContent = email;
+    if ($('pp-name'))  $('pp-name').textContent  = name;
+    if ($('pp-email')) $('pp-email').textContent = email;
+    if (chip) chip.title = name + (email ? ' · ' + email : '');
+    applyPhoto('', initial);
+
+    const g = $('hero-greeting');
+    if (g) {
+      const wish = g.querySelector('.hg-wish');
+      const who  = g.querySelector('.hg-name');
+      if (wish) wish.textContent = greetingWord() + ',';
+      if (who)  who.textContent  = name;          // textContent, never innerHTML
+      requestAnimationFrame(() => g.classList.add('show'));
+    }
+
+    // live profile: the avatar and points follow whatever the dashboard has
+    unsubProfile = onSnapshot(doc(db, 'veeraUsers', user.uid), (snap) => {
+      const data = snap.exists() ? snap.data() : {};
+      applyPhoto(data.photoURL || '', initial);
+      const pts = $('pp-points-val');
+      if (pts) pts.textContent = (data.totalPoints || 0).toLocaleString();
+    }, (err) => console.error('Profile listener failed:', err));
+
+    // Daily Hands-On bonus. The onSnapshot above updates the points figure on
+    // screen by itself, so nothing here needs to touch the UI on failure.
+    awardDailyBonus(user.uid)
+      .then((awarded) => { if (awarded) showPointsToast(); })
+      .catch((err) => console.error('Daily bonus failed:', err));
+  });
+
+  // ── profile panel open / close ──
+  const panel = $('profile-panel'), chipEl = $('user-chip');
+  function closePanel(){ if (panel) panel.classList.remove('open'); }
+  if (chipEl && panel) {
+    chipEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.toggle('open');
+      if (window.feather) feather.replace({ 'stroke-width': 1.5 });
+    });
+    panel.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', closePanel);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+  }
+
+  const out = $('pp-signout');
+  if (out) out.addEventListener('click', async () => {
+    out.disabled = true;
+    try { await signOut(auth); window.location.href = 'login.html'; }
+    catch (err) { console.error('Sign out failed:', err); out.disabled = false; }
+  });
+</script>
+
+</body>
+</html>

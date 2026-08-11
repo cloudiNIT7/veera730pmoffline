@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>403 — Access Denied | Cloud iNIT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#08060f;
+    --glass:rgba(255,255,255,.055);
+    --glass-hi:rgba(255,255,255,.09);
+    --line:rgba(255,255,255,.14);
+    --line-soft:rgba(255,255,255,.08);
+    --text-0:#f4f2fb;
+    --text-1:#a8a3c4;
+    --text-2:#6b6690;
+    --violet:#9b8bff;
+    --violet-2:#6d5bff;
+    --pink:#ff7ad1;
+    --cyan:#5ee6d0;
+    --red:#ff6b7a;
+    --red-soft:rgba(255,107,122,.16);
+    --disp:'Space Grotesk', 'Inter', sans-serif;
+    --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg-0);
+    color:var(--text-0);
+    font-family:var(--sans);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:3rem 1.1rem;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* ---- aurora backdrop ---- */
+  .aurora{position:fixed; inset:-10%; z-index:0; filter:blur(70px); opacity:.75;}
+  .aurora span{
+    position:absolute;
+    border-radius:50%;
+    mix-blend-mode:screen;
+    animation:drift 16s ease-in-out infinite;
+  }
+  .a1{width:46vw; height:46vw; left:-8%; top:-6%; background:radial-gradient(circle, var(--violet-2), transparent 70%); animation-delay:0s;}
+  .a2{width:38vw; height:38vw; right:-10%; top:5%; background:radial-gradient(circle, var(--pink), transparent 70%); opacity:.55; animation-delay:-5s;}
+  .a3{width:42vw; height:42vw; left:20%; bottom:-18%; background:radial-gradient(circle, var(--cyan), transparent 70%); opacity:.35; animation-delay:-10s;}
+  @keyframes drift{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(3%,-4%) scale(1.08);}
+  }
+  .noise{
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .stage{
+    width:100%;
+    max-width:460px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    position:relative;
+    z-index:2;
+  }
+  .badge-lock, .badge, h1, .sub, .glass-card, .actions, .foot{
+    opacity:0;
+    transform:translateY(14px);
+    animation:stage-in .65s cubic-bezier(.16,1,.3,1) forwards;
+  }
+  @keyframes stage-in{to{opacity:1; transform:translateY(0);}}
+  .badge-lock{animation-delay:.05s;}
+  .badge{animation-delay:.22s;}
+  h1{animation-delay:.3s;}
+  .sub{animation-delay:.38s;}
+  .glass-card{animation-delay:.46s;}
+  .actions{animation-delay:.56s;}
+  .foot{animation-delay:.64s;}
+
+  /* ---- glass lock emblem ---- */
+  .badge-lock{
+    width:92px; height:92px;
+    border-radius:26px;
+    background:var(--glass);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--line);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.18),
+      0 20px 50px -18px rgba(155,139,255,.5),
+      0 0 0 1px rgba(255,255,255,.02);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:22px;
+    position:relative;
+  }
+  .badge-lock::after{
+    content:'';
+    position:absolute; inset:-1px;
+    border-radius:27px;
+    padding:1px;
+    background:linear-gradient(135deg, rgba(255,107,122,.6), transparent 40%, transparent 60%, rgba(155,139,255,.5));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;
+    mask-composite:exclude;
+    pointer-events:none;
+  }
+  .badge-lock svg{width:36px; height:36px; color:var(--red); position:relative; z-index:1;}
+  .pulse-ring{
+    position:absolute; inset:-8px; border-radius:32px;
+    border:1px solid rgba(255,107,122,.35);
+    animation:pulse-ring 2.4s ease-out infinite;
+  }
+  @keyframes pulse-ring{
+    0%{transform:scale(.9); opacity:.9;}
+    100%{transform:scale(1.35); opacity:0;}
+  }
+
+  /* ---- badge + heading ---- */
+  .badge{
+    display:inline-flex; align-items:center; gap:7px;
+    font-family:var(--mono);
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--red);
+    background:var(--red-soft);
+    border:1px solid rgba(255,107,122,.32);
+    border-radius:100px;
+    padding:5px 14px;
+    margin-bottom:16px;
+    backdrop-filter:blur(10px);
+  }
+
+  h1{
+    font-family:var(--disp);
+    font-size:27px;
+    font-weight:700;
+    letter-spacing:-.015em;
+    text-align:center;
+    margin:0 0 10px;
+    background:linear-gradient(135deg, var(--text-0), var(--text-1));
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+  .sub{
+    font-size:14.5px;
+    line-height:1.65;
+    color:var(--text-1);
+    text-align:center;
+    max-width:360px;
+    margin:0 0 28px;
+  }
+  .sub b{color:var(--text-0); font-weight:600;}
+
+  /* ---- glass detail card ---- */
+  .glass-card{
+    width:100%;
+    background:var(--glass);
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:6px;
+    margin-bottom:22px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 24px 60px -30px rgba(0,0,0,.6);
+  }
+  .glass-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:13px 17px;
+    font-size:13px;
+  }
+  .glass-row + .glass-row{border-top:1px solid var(--line-soft);}
+  .glass-row .k{color:var(--text-2); font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;}
+  .glass-row .v{color:var(--text-0); font-family:var(--mono); font-size:12.5px;}
+  .glass-row .v.deny{color:var(--red); font-weight:600;}
+  .glass-row .v.ok{color:var(--cyan);}
+
+  /* ---- actions ---- */
+  .actions{
+    display:flex;
+    gap:10px;
+    width:100%;
+  }
+  .btn{
+    flex:1;
+    font-family:var(--sans);
+    font-size:13.5px;
+    font-weight:600;
+    padding:13px 18px;
+    border-radius:13px;
+    cursor:pointer;
+    border:1px solid var(--line);
+    background:var(--glass);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    color:var(--text-1);
+    transition:transform .15s ease, filter .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn:focus-visible{outline:2px solid var(--violet); outline-offset:2px;}
+  .btn-primary{
+    background:linear-gradient(135deg, var(--violet), var(--violet-2));
+    color:#fff;
+    border-color:transparent;
+    box-shadow:0 16px 32px -14px rgba(109,91,255,.65);
+  }
+  .btn-primary:hover{filter:brightness(1.1);}
+  .btn-ghost:hover{color:var(--text-0); border-color:var(--text-1); background:var(--glass-hi);}
+
+  .foot{
+    text-align:center;
+    margin-top:26px;
+    font-size:11.5px;
+    color:var(--text-2);
+  }
+  .foot strong{color:var(--text-1); font-weight:600;}
+  .foot .sep{margin:0 8px; opacity:.5;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+<div class="noise"></div>
+
+<div class="stage">
+
+  <div class="badge-lock">
+    <div class="pulse-ring"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="10.5" width="16" height="10" rx="2.5"/>
+      <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5"/>
+      <circle cx="12" cy="15.2" r="1.6" fill="currentColor" stroke="none"/>
+    </svg>
+  </div>
+
+  <div class="badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+    403 · Access Denied
+  </div>
+
+  <h1>Restricted zone detected</h1>
+  <p class="sub">This page belongs to the <b>admin</b> layer of Cloud iNIT. Your account doesn't carry that clearance yet.</p>
+
+  <div class="glass-card">
+    <div class="glass-row">
+      <span class="k">Role</span>
+      <span class="v">viewer</span>
+    </div>
+    <div class="glass-row">
+      <span class="k">Required</span>
+      <span class="v deny">admin</span>
+    </div>
+    <div class="glass-row">
+      <span class="k">Client IP</span>
+      <span class="v" id="ip-val">resolving…</span>
+    </div>
+    <div class="glass-row">
+      <span class="k">Status</span>
+      <span class="v deny">Blocked</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-ghost" onclick="goBack()">← Go back</button>
+    <button class="btn btn-primary" onclick="requestAccess(event)">Request access</button>
+  </div>
+
+  <div class="foot">
+    developed by <strong>Abinash Kumar</strong><span class="sep">·</span>Cloud iNIT Platform
+  </div>
+
+</div>
+
+<script>
+  // real IP lookup
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json())
+    .then(d => { document.getElementById('ip-val').textContent = d.ip; })
+    .catch(() => { document.getElementById('ip-val').textContent = 'unresolved'; });
+
+  function goBack(){
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = 'main.html';
+    }
+  }
+
+  function requestAccess(e){
+    const btn = e.currentTarget;
+    const original = btn.textContent;
+    btn.textContent = 'Request sent ✓';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2400);
+  }
+</script>
+
+</body>
+</html>

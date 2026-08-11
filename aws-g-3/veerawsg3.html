@@ -1,0 +1,1836 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Girls-3</title>
+    <link rel="icon" type="image/png" href="https://static.vecteezy.com/system/resources/thumbnails/045/720/728/small_2x/dark-cat-head-free-png.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Animation libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f0b29; --panel-bg: #1c183d; --border-color: #3d3763;
+            --text-main: #ffffff; --text-dim: #b5b3c5;
+            --accent-purple: #5c4ee5; --accent-pink: #d81b60;
+            --btn-hover: #4a3dbd; --accent-green: #1a9f5a;
+        }
+        body { background-color:var(--bg-dark); color:var(--text-main); font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; margin:0; padding:40px 20px; display:flex; justify-content:center; position:relative; overflow-x:hidden; }
+
+        /* ===== Animated aurora background ===== */
+        #aurora-bg { position:fixed; inset:0; z-index:-2; overflow:hidden; pointer-events:none; }
+        .aurora-blob { position:absolute; border-radius:50%; filter:blur(90px); opacity:0.55; will-change:transform; }
+        .aurora-blob.b1 { width:520px; height:520px; background:radial-gradient(circle,#5c4ee5,transparent 70%); top:-120px; left:-100px; }
+        .aurora-blob.b2 { width:460px; height:460px; background:radial-gradient(circle,#d81b60,transparent 70%); bottom:-140px; right:-80px; opacity:0.4; }
+        .aurora-blob.b3 { width:380px; height:380px; background:radial-gradient(circle,#1a9f5a,transparent 70%); top:40%; left:55%; opacity:0.3; }
+        /* Subtle grid overlay */
+        #grid-overlay { position:fixed; inset:0; z-index:-1; pointer-events:none;
+            background-image:linear-gradient(rgba(92,78,229,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(92,78,229,0.05) 1px,transparent 1px);
+            background-size:44px 44px; mask-image:radial-gradient(ellipse at center,#000 30%,transparent 78%); -webkit-mask-image:radial-gradient(ellipse at center,#000 30%,transparent 78%); }
+        /* Floating particles canvas */
+        #particle-canvas { position:fixed; inset:0; z-index:-1; pointer-events:none; }
+
+        .sandbox-container { width:100%; max-width:1100px; position:relative; z-index:1; }
+
+        /* Elements start hidden for GSAP reveal (fallback: visible if JS off) */
+        .anim-reveal { opacity:0; }
+        .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:25px; }
+        .logo-section { display:flex; align-items:center; gap:20px; margin-right:auto; }
+        h1 { margin:0; font-size:24px; font-weight:600; }
+        .main-panel { background:linear-gradient(160deg,rgba(18,15,40,0.95),rgba(13,10,32,0.96)); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-radius:16px; padding:30px; border:1px solid var(--border-color); box-shadow:0 20px 60px rgba(0,0,0,0.5); position:relative; overflow:hidden; }
+        .action-bar { display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.25); padding:15px 20px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:25px; flex-wrap:wrap; gap:15px; }
+        .btn-group { display:flex; align-items:center; gap:10px; }
+        .start-btn { background:var(--accent-green); border:none; color:white; padding:11px 22px; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:7px; transition:background 0.2s,box-shadow 0.2s,transform 0.15s; position:relative; }
+        .start-btn:active,.open-btn:active,.delete-btn:active { transform:scale(0.96); }
+        .open-btn,.delete-btn { position:relative; transition:0.3s,transform 0.15s; }
+        .start-btn:hover:not(:disabled) { background:#158a4c; box-shadow:0 2px 14px rgba(26,159,90,0.35); }
+        .start-btn:disabled { opacity:0.55; cursor:not-allowed; }
+        .start-btn.pulse-glow { animation:pulseGreen 1.7s infinite; }
+        @keyframes pulseGreen { 0%{box-shadow:0 0 0 0 rgba(26,159,90,0.55);} 60%{box-shadow:0 0 0 9px rgba(26,159,90,0);} 100%{box-shadow:0 0 0 0 rgba(26,159,90,0);} }
+        .delete-btn { background:transparent; border:1px solid var(--accent-pink); color:white; padding:10px 18px; border-radius:6px; cursor:pointer; transition:0.3s; display:none; }
+        .delete-btn:hover { background:rgba(216,27,96,0.1); }
+        .delete-btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .open-btn { background:var(--accent-purple); border:none; color:white; padding:11px 22px; border-radius:6px; cursor:pointer; font-weight:600; display:none; }
+        .open-btn:disabled { opacity:0.6; cursor:not-allowed; }
+
+        /* URL section */
+        .url-section { display:flex; flex-direction:column; gap:4px; }
+        .url-section label { font-size:12px; color:var(--text-dim); }
+
+        /* Lock notice wrapper — blurred before sandbox starts */
+        #url-locked-notice {
+            display:flex; align-items:center; gap:10px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid var(--border-color);
+            border-radius:8px;
+            padding:10px 16px;
+            filter:blur(4px);
+            pointer-events:none;
+            user-select:none;
+            transition:filter 0.4s ease;
+        }
+        #url-locked-notice.unblurred {
+            filter:none;
+            pointer-events:auto;
+            user-select:auto;
+        }
+        #url-locked-notice .lock-icon { font-size:20px; color:#7c74e0; }
+        #url-locked-notice p { margin:0; }
+        #url-locked-notice .lock-title { font-size:14px; font-weight:600; color:var(--text-main); }
+        #url-locked-notice .lock-sub { font-size:12px; color:var(--text-dim); margin-top:2px; }
+
+
+
+        .status-bar { display:flex; align-items:center; gap:10px; margin-bottom:30px; font-size:14px; flex-wrap:wrap; }
+        .status-bar i { color:var(--text-dim); }
+        .content-layout { display:grid; grid-template-columns:1fr 320px; gap:40px; }
+        .inputs-grid { display:grid; grid-template-columns:1fr 1fr; gap:25px; }
+        .input-group label { display:flex; align-items:center; gap:5px; font-size:14px; font-weight:500; margin-bottom:10px; }
+        .field-container { background:transparent; border:1px solid var(--border-color); border-radius:6px; display:flex; align-items:center; padding:12px 15px; }
+        .field-container input { background:transparent; border:none; color:white; width:100%; outline:none; font-size:15px; }
+        .field-container i { color:var(--text-dim); cursor:pointer; transition:0.2s; }
+        .field-container i:hover { color:white; }
+        .creds-locked .field-container { filter:blur(5px); pointer-events:none; user-select:none; }
+        .creds-locked .input-group label { filter:blur(3px); }
+        .creds-wrapper { position:relative; }
+        .info-card { background:rgba(255,255,255,0.03); border-radius:8px; padding:25px; height:fit-content; }
+        .info-card h3 { margin-top:0; font-size:16px; line-height:1.4; margin-bottom:15px; }
+        .info-card p { font-size:13.5px; color:var(--text-dim); line-height:1.6; margin-bottom:20px; }
+        .info-card a { color:var(--text-dim); font-size:13px; text-decoration:underline; }
+        .help-fab { position:fixed; bottom:30px; right:30px; background:var(--accent-pink); width:50px; height:50px; border-radius:50%; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 15px rgba(216,27,96,0.4); cursor:pointer; }
+        #sandbox-status-badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; margin-left:12px; vertical-align:middle; }
+        .badge-stopped { background:rgba(216,27,96,0.15); color:#f06292; border:1px solid rgba(216,27,96,0.3); }
+        .badge-starting { background:rgba(247,201,72,0.15); color:#f7c948; border:1px solid rgba(247,201,72,0.3); }
+        .badge-running { background:rgba(26,159,90,0.15); color:#4caf81; border:1px solid rgba(26,159,90,0.3); }
+        .badge-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+        .badge-running .badge-dot { animation:pulseDot 1.4s ease-in-out infinite; }
+        @keyframes pulseDot { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+        .spin { animation:spin 0.8s linear infinite; }
+        @keyframes spin { to{transform:rotate(360deg);} }
+
+        /* Profile Avatar */
+        #firebase-profile-box { display:flex; align-items:center; gap:14px; margin-left:30px; }
+        .avatar-wrap { position:relative; width:50px; height:50px; flex-shrink:0; cursor:pointer; }
+        .avatar-wrap:hover .avatar-overlay { opacity:1; }
+        #avatar {
+            width:50px; height:50px; border-radius:50%;
+            outline:2.5px solid #5c4ee5;
+            display:flex; align-items:center; justify-content:center;
+            font-size:19px; font-weight:700;
+            background:#5c4ee5; color:#fff;
+            overflow:hidden; transition:outline-color 0.2s;
+            background-size:cover; background-position:center;
+        }
+        .avatar-overlay { position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.58); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+        .avatar-overlay i { color:#fff; font-size:15px; }
+        #pic-file-input { display:none; }
+
+        /* Upload Modal */
+        #pic-upload-modal { display:none; position:fixed; inset:0; background:rgba(10,6,35,0.88); z-index:12000; justify-content:center; align-items:center; backdrop-filter:blur(5px); }
+        #pic-upload-modal.show { display:flex; }
+        .pic-modal-box { background:#1c183d; border:1px solid #3d3763; border-radius:18px; padding:38px 34px 30px; max-width:400px; width:93%; box-shadow:0 14px 52px rgba(0,0,0,0.6); text-align:center; position:relative; animation:slideUp 0.28s cubic-bezier(0.34,1.4,0.64,1) both; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(28px) scale(0.97);} to{opacity:1;transform:translateY(0) scale(1);} }
+        .pic-modal-close { position:absolute; top:14px; right:18px; background:transparent; border:none; color:#b5b3c5; font-size:18px; cursor:pointer; transition:color 0.15s; display:none; }
+        .pic-modal-close:hover { color:#fff; }
+        .pic-modal-icon { width:60px; height:60px; border-radius:50%; background:rgba(92,78,229,0.14); border:1.5px solid #5c4ee5; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+        .pic-modal-icon i { font-size:28px; color:#5c4ee5; }
+        .pic-modal-title { font-size:21px; font-weight:700; margin-bottom:5px; }
+        .pic-modal-sub { font-size:13px; color:#b5b3c5; margin-bottom:24px; }
+        .pic-drop-zone { border:2px dashed #3d3763; border-radius:13px; padding:32px 20px; cursor:pointer; transition:border-color 0.2s,background 0.2s; margin-bottom:10px; }
+        .pic-drop-zone:hover,.pic-drop-zone.drag-over { border-color:#5c4ee5; background:rgba(92,78,229,0.07); }
+        #pic-preview-wrap { display:none; flex-direction:column; align-items:center; gap:10px; }
+        #pic-preview-img { width:96px; height:96px; border-radius:50%; object-fit:cover; outline:3px solid #5c4ee5; }
+        .pic-drop-placeholder { display:flex; flex-direction:column; align-items:center; gap:9px; color:#b5b3c5; }
+        .pic-drop-placeholder i { font-size:38px; color:#5c4ee5; }
+        .pic-drop-placeholder span { font-size:13px; }
+        .upload-progress-wrap { display:none; margin:12px 0 4px; }
+        .upload-progress-bar { height:5px; border-radius:3px; background:#2d2858; overflow:hidden; }
+        .upload-progress-fill { height:100%; width:0%; background:linear-gradient(90deg,#5c4ee5,#a78bfa); transition:width 0.15s; border-radius:3px; }
+        .upload-progress-label { font-size:11px; color:#b5b3c5; margin-top:5px; }
+        .pic-modal-btns { display:flex; gap:10px; justify-content:center; margin-top:16px; }
+        .pic-btn-save { background:#5c4ee5; border:none; color:#fff; padding:11px 30px; border-radius:8px; font-weight:600; cursor:pointer; font-size:14px; transition:background 0.2s; display:none; align-items:center; gap:7px; }
+        .pic-btn-save:hover { background:#4a3dbd; }
+        .pic-btn-save:disabled { opacity:0.6; cursor:not-allowed; }
+        .pic-btn-skip { background:transparent; border:1px solid #3d3763; color:#b5b3c5; padding:11px 22px; border-radius:8px; font-size:14px; cursor:pointer; transition:background 0.2s,color 0.2s; display:none; }
+        .pic-btn-skip:hover { background:rgba(255,255,255,0.05); color:#fff; }
+
+        /* Access restriction */
+        #access-restrict-modal { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(20,10,50,0.92); z-index:10001; justify-content:center; align-items:center; }
+        #access-restrict-modal .modal-content { background:#241f4c; color:white; border-radius:14px; max-width:400px; width:90%; padding:32px 20px 24px; box-shadow:0 5px 40px 0 rgba(0,0,0,0.4); text-align:center; font-size:20px; }
+        #access-restrict-modal i { color:#ffde59; font-size:36px; margin-bottom:18px; }
+
+        @media(max-width:700px){
+            .content-layout{grid-template-columns:1fr;}
+            .inputs-grid{grid-template-columns:1fr;}
+            .action-bar{flex-direction:column;align-items:flex-start;}
+        }
+    </style>
+<style id="glass-ui">
+/* ══════════════════════════════════════════════════════════════════════
+   AWS SANDBOX — GLASS DESIGN SYSTEM
+   One recipe on every surface: translucent fill, hairline edge, backdrop
+   blur + saturation, an inset top highlight so the edge catches light,
+   and a soft shadow beneath.
+
+   Blur is spent only on top-level surfaces. Chips, tiles, badges and
+   inputs live inside an already-blurred parent, so a second
+   backdrop-filter costs a compositor pass and looks identical.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --g-fill:rgba(255,255,255,.062);
+  --g-fill-2:rgba(255,255,255,.085);
+  --g-edge:rgba(255,255,255,.14);
+  --g-edge-hi:rgba(255,255,255,.26);
+  --g-blur:saturate(180%) blur(16px);
+  --g-blur-lg:saturate(190%) blur(26px);
+  --g-in:inset 0 .5px 0 rgba(255,255,255,.20);
+  --g-in-hi:inset 0 .5px 0 rgba(255,255,255,.36);
+  --g-sh:0 10px 32px rgba(0,0,0,.36);
+  --g-sh-lg:0 28px 72px rgba(0,0,0,.54);
+  --sheen:linear-gradient(135deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.03) 34%,rgba(255,255,255,0) 62%);
+
+  --violet:#7c6bff;   --violet-2:#a99bff;
+  --pink:#ff4d8d;     --mint:#2fd48b;
+  --amber:#ffc83d;    --sky:#5ec8ff;
+
+  --ink:#f4f3ff;      --ink-2:rgba(244,243,255,.66);  --ink-3:rgba(244,243,255,.40);
+  --r-lg:24px; --r-md:16px; --r-sm:12px;
+}
+
+/* ── canvas ─────────────────────────────────────────────────────── */
+body{
+  padding:44px 22px 90px;
+  background:#000;
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+/* the colour washes are gone — the glass reads against pure black */
+#aurora-bg{ display:none; }
+
+/* ── violet light rays ──────────────────────────────────────────────
+   Beams falling from above, drifting and breathing. The soft edges come
+   from a static mask rather than a CSS filter: a filtered fixed layer
+   repaints on every scroll frame, a masked one composites for free.   */
+#ray-field{
+  position:fixed; inset:-18% -10%; z-index:-1;
+  pointer-events:none; overflow:hidden;
+}
+.ray{
+  position:absolute; top:-24%; left:var(--x);
+  width:var(--w); height:150%;
+  transform-origin:50% 0;
+  transform:rotate(var(--a));
+  opacity:var(--o);
+  background:linear-gradient(to bottom,
+      rgba(150,132,255,.55) 0%,
+      rgba(124,107,255,.30) 26%,
+      rgba(108,92,235,.12) 56%,
+      transparent 84%);
+  -webkit-mask-image:linear-gradient(to right, transparent 0%, #000 34%, #000 66%, transparent 100%);
+          mask-image:linear-gradient(to right, transparent 0%, #000 34%, #000 66%, transparent 100%);
+  animation:raySweep var(--d) ease-in-out infinite alternate;
+  will-change:transform, opacity;
+}
+@keyframes raySweep{
+  from{ transform:rotate(var(--a))                     translateX(-26px) scaleY(1);    opacity:calc(var(--o) * .55); }
+  to  { transform:rotate(calc(var(--a) + 7deg))        translateX(26px)  scaleY(1.08); opacity:var(--o); }
+}
+/* a slow wash across the whole field so the beams never look static */
+#ray-field::after{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(58% 44% at 50% 0%, rgba(124,107,255,.20), transparent 72%);
+  animation:rayGlow 14s ease-in-out infinite alternate;
+}
+@keyframes rayGlow{ from{ opacity:.45; } to{ opacity:1; } }
+
+@media (prefers-reduced-motion:reduce){
+  .ray,#ray-field::after{ animation:none; }
+}
+@media (max-width:760px){
+  .ray{ height:120%; }
+  #ray-field{ opacity:.7; }
+}
+#grid-overlay{
+  background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:radial-gradient(ellipse 78% 68% at 50% 34%,#000 35%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 78% 68% at 50% 34%,#000 35%,transparent 100%);
+}
+::selection{ background:rgba(124,107,255,.42); color:#fff; }
+::-webkit-scrollbar{ width:12px; height:12px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.13); border-radius:9px;
+  border:3.5px solid transparent; background-clip:content-box;
+}
+::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.24); background-clip:content-box; }
+
+.sandbox-container{ max-width:1180px; }
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+
+/* ── header ─────────────────────────────────────────────────────── */
+.header{ align-items:center; margin-bottom:26px; gap:20px; flex-wrap:wrap; }
+.logo-section{ gap:0; align-items:center; }
+.title-block{ display:flex; flex-direction:column; gap:2px; }
+.eyebrow{
+  font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--violet-2); opacity:.85;
+}
+h1{ font-size:30px; font-weight:650; letter-spacing:-.03em; line-height:1.12; margin-top:2px; }
+/* one compact pill instead of a tall stack */
+.usage-meter{
+  display:inline-flex; align-items:center; gap:11px; width:fit-content;
+  margin-top:11px; padding:7px 15px; border-radius:980px;
+  background:var(--g-fill); border:1px solid var(--g-edge);
+  box-shadow:var(--g-in);
+}
+.usage-caption{
+  font-size:9.5px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3); white-space:nowrap;
+}
+.pr-track{
+  position:relative; width:132px; height:6px; border-radius:6px; overflow:hidden;
+  background:rgba(255,255,255,.10); box-shadow:inset 0 1px 2px rgba(0,0,0,.4);
+}
+.pr-fill{
+  display:block; height:100%; width:0; border-radius:6px;
+  background:linear-gradient(90deg,var(--violet),var(--violet-2));
+  box-shadow:0 0 10px rgba(124,107,255,.6);
+  transition:width .8s cubic-bezier(.22,1,.36,1), background .4s, box-shadow .4s;
+}
+.pr-reward{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:700; letter-spacing:.01em; color:#ffe9a8;
+  padding:3px 9px; border-radius:980px;
+  background:rgba(255,200,61,.12); border:1px solid rgba(255,200,61,.26);
+  white-space:nowrap;
+}
+.pr-reward i{ font-size:9.5px; color:var(--amber); }
+
+/* goal reached */
+.usage-meter.is-done{
+  background:rgba(47,212,139,.10); border-color:rgba(47,212,139,.30);
+}
+.usage-meter.is-done .pr-fill{
+  background:linear-gradient(90deg,var(--mint),#7ef0bd);
+  box-shadow:0 0 12px rgba(47,212,139,.7);
+}
+.usage-meter.is-done .usage-label{ color:#7ef0bd; font-weight:600; }
+.usage-meter.is-done .pr-reward{
+  background:rgba(47,212,139,.16); border-color:rgba(47,212,139,.34); color:#7ef0bd;
+}
+.usage-meter.is-done .pr-reward i{ color:var(--mint); }
+.usage-label{ font-size:11px; color:var(--ink-2); letter-spacing:-.01em; white-space:nowrap; }
+
+#firebase-profile-box{
+  gap:12px; margin-left:auto; padding:9px 18px 9px 9px; border-radius:980px;
+  background:var(--g-fill); border:1px solid var(--g-edge);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-sh),var(--g-in);
+}
+#avatar{ outline:2px solid rgba(124,107,255,.75) !important; outline-offset:2px; }
+.avatar-overlay{ backdrop-filter:blur(2px); }
+
+/* ── the main panel ─────────────────────────────────────────────── */
+.main-panel{
+  background:var(--g-fill);
+  border:1px solid var(--g-edge);
+  border-radius:var(--r-lg);
+  padding:32px;
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:var(--g-sh-lg),var(--g-in);
+}
+.main-panel::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  border-radius:inherit;background:var(--sheen);
+}
+.main-panel > *{ position:relative; z-index:1; }
+
+/* ── action bar ─────────────────────────────────────────────────── */
+.action-bar{
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--g-edge);
+  border-radius:var(--r-md);
+  padding:18px 20px;
+  box-shadow:var(--g-in),0 6px 20px rgba(0,0,0,.20);
+}
+.btn-group{ gap:11px; }
+
+/* ── buttons ────────────────────────────────────────────────────── */
+.start-btn,.delete-btn,.open-btn,.pic-btn-save,.pic-btn-skip{
+  border-radius:var(--r-sm) !important;
+  padding:12px 22px !important;
+  font-weight:600; font-size:14px; letter-spacing:-.01em;
+  border:1px solid var(--g-edge-hi) !important;
+  box-shadow:var(--g-in-hi),0 6px 18px rgba(0,0,0,.26);
+  transition:filter .18s,transform .14s,box-shadow .2s,background .2s,opacity .2s;
+}
+.start-btn{
+  background:linear-gradient(145deg,rgba(47,212,139,.88),rgba(26,159,90,.62)) !important;
+  border-color:rgba(126,240,189,.46) !important; color:#04231a !important;
+}
+.start-btn:hover:not(:disabled){ filter:brightness(1.08); box-shadow:var(--g-in-hi),0 10px 30px rgba(47,212,139,.36); }
+.open-btn{
+  background:linear-gradient(145deg,rgba(124,107,255,.88),rgba(92,78,229,.6)) !important;
+  border-color:rgba(169,155,255,.5) !important; color:#fff !important;
+}
+.open-btn:hover:not(:disabled){ filter:brightness(1.08); box-shadow:var(--g-in-hi),0 10px 30px rgba(124,107,255,.4); }
+.delete-btn{
+  background:rgba(255,255,255,.05) !important; color:#ff9db8 !important;
+  border-color:rgba(255,77,141,.3) !important;
+}
+.delete-btn:hover:not(:disabled){
+  background:rgba(255,77,141,.14) !important; border-color:rgba(255,77,141,.55) !important;
+  box-shadow:var(--g-in-hi),0 10px 26px rgba(255,77,141,.26);
+}
+.start-btn:disabled,.delete-btn:disabled,.open-btn:disabled{
+  opacity:.38; box-shadow:var(--g-in); filter:none; cursor:not-allowed;
+}
+.start-btn:active:not(:disabled),.delete-btn:active:not(:disabled),.open-btn:active:not(:disabled){ transform:scale(.97); }
+
+/* ── the URL lock notice ────────────────────────────────────────── */
+.url-section label{
+  font-size:9.5px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); margin-bottom:7px;
+}
+#url-locked-notice{
+  background:rgba(255,255,255,.05); border:1px solid var(--g-edge);
+  border-radius:var(--r-sm); padding:12px 18px; gap:13px;
+  box-shadow:var(--g-in);
+}
+#url-locked-notice .lock-icon{
+  width:34px; height:34px; border-radius:10px; display:grid; place-items:center;
+  font-size:15px; color:var(--violet-2);
+  background:rgba(124,107,255,.15); border:1px solid rgba(124,107,255,.28);
+}
+#url-locked-notice .lock-title{ font-size:13.5px; letter-spacing:-.01em; }
+#url-locked-notice .lock-sub{ font-size:11.5px; color:var(--ink-3); }
+
+/* ── status toolbar ─────────────────────────────────────────────── */
+.status-bar{ display:flex; gap:12px; flex-wrap:wrap; margin:22px 0 18px; }
+.stat-tile{
+  display:flex; align-items:center; gap:12px; flex:1 1 190px;
+  padding:13px 16px; border-radius:var(--r-sm);
+  background:rgba(255,255,255,.04); border:1px solid var(--g-edge);
+  box-shadow:var(--g-in);
+  transition:background .2s,border-color .2s;
+}
+.stat-tile:hover{ background:rgba(255,255,255,.07); border-color:var(--g-edge-hi); }
+.stat-ico{
+  width:34px; height:34px; flex:0 0 auto; border-radius:10px; display:grid; place-items:center;
+  font-size:14px; color:var(--violet-2);
+  background:rgba(124,107,255,.14); border:1px solid rgba(124,107,255,.26);
+}
+.stat-key{
+  display:block; font-size:9.5px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3); margin-bottom:3px;
+}
+.stat-val{
+  display:block; font-size:14px; font-weight:600; color:var(--ink);
+  letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+}
+#usage-timer{ font-variant-numeric:tabular-nums; }
+.stat-tile--status .stat-ico{ color:var(--mint); background:rgba(47,212,139,.13); border-color:rgba(47,212,139,.26); }
+#sandbox-status-badge{ margin-left:0 !important; box-shadow:var(--g-in); }
+.badge-stopped{ background:rgba(255,77,141,.14); color:#ff9db8; border-color:rgba(255,77,141,.32); }
+.badge-starting{ background:rgba(255,200,61,.14); color:#ffd970; border-color:rgba(255,200,61,.32); }
+.badge-running{ background:rgba(47,212,139,.14); color:#7ef0bd; border-color:rgba(47,212,139,.32); }
+
+/* ── alerts ─────────────────────────────────────────────────────── */
+.alert{
+  display:flex; align-items:flex-start; gap:13px;
+  padding:15px 19px; border-radius:var(--r-sm); margin:0 0 18px;
+  font-size:13.5px; line-height:1.6; box-shadow:var(--g-in);
+}
+.alert-ico{
+  width:34px; height:34px; flex:0 0 auto; border-radius:10px;
+  display:grid; place-items:center; font-size:14px;
+}
+.alert--amber{
+  background:rgba(255,200,61,.09); border:1px solid rgba(255,200,61,.26); color:rgba(255,233,168,.9);
+}
+.alert--amber .alert-ico{ color:var(--amber); background:rgba(255,200,61,.15); border:1px solid rgba(255,200,61,.28); }
+.alert--amber strong{ color:#ffe9a8; font-weight:650; }
+
+/* ── section headers ────────────────────────────────────────────── */
+.section-head{ display:flex; align-items:center; gap:13px; margin:4px 0 16px; }
+.section-ico{
+  width:36px; height:36px; flex:0 0 auto; border-radius:11px; display:grid; place-items:center;
+  font-size:14px; color:var(--violet-2);
+  background:rgba(124,107,255,.14); border:1px solid rgba(124,107,255,.26);
+  box-shadow:var(--g-in);
+}
+.section-head b{ display:block; font-size:15px; font-weight:650; letter-spacing:-.015em; }
+.section-head p{ margin:2px 0 0; font-size:12px; color:var(--ink-3); }
+
+/* ── credential fields ──────────────────────────────────────────── */
+.content-layout{ gap:34px; align-items:start; }
+.side-col{ display:flex; flex-direction:column; gap:18px; }
+/* in the narrow column the regions sit one above the other */
+.side-col .region-panel{ margin:0; }
+.side-col .region-grid{ grid-template-columns:1fr; }
+.inputs-grid{ gap:18px; }
+.input-group label{
+  font-size:11px; font-weight:600; letter-spacing:.02em; color:var(--ink-2); margin-bottom:8px;
+}
+.input-group label i{ color:var(--ink-3); font-size:11px; }
+.field-container{
+  background:rgba(255,255,255,.045); border:1px solid var(--g-edge);
+  border-radius:var(--r-sm); padding:13px 15px; gap:8px;
+  box-shadow:var(--g-in);
+  transition:border-color .2s,background .2s,box-shadow .2s;
+}
+.field-container:hover{ background:rgba(255,255,255,.07); }
+.field-container:focus-within{
+  border-color:rgba(124,107,255,.6); background:rgba(124,107,255,.09);
+  box-shadow:var(--g-in),0 0 0 3px rgba(124,107,255,.16);
+}
+.field-container input{ font-size:14px; letter-spacing:.01em; }
+.field-container i{
+  width:28px; height:28px; border-radius:8px; display:grid; place-items:center;
+  font-size:12.5px; margin-left:0 !important;
+  background:rgba(255,255,255,.05); border:1px solid transparent;
+  transition:background .18s,color .18s,border-color .18s,transform .14s;
+}
+.field-container i:hover{
+  background:rgba(124,107,255,.18); border-color:rgba(124,107,255,.34); color:#fff;
+}
+.field-container i:active{ transform:scale(.9); }
+
+/* ── rule rows ──────────────────────────────────────────────────── */
+.rule-list{ display:flex; flex-direction:column; gap:10px; margin:20px 0; }
+.rule{
+  display:flex; align-items:flex-start; gap:13px;
+  padding:14px 17px; border-radius:var(--r-sm);
+  background:rgba(255,255,255,.035); border:1px solid var(--g-edge);
+  box-shadow:var(--g-in);
+  transition:background .2s,border-color .2s,transform .18s;
+}
+.rule:hover{ background:rgba(255,255,255,.06); border-color:var(--g-edge-hi); transform:translateX(3px); }
+.rule-ico{
+  width:32px; height:32px; flex:0 0 auto; border-radius:10px; display:grid; place-items:center;
+  font-size:13px; color:var(--sky);
+  background:rgba(94,200,255,.12); border:1px solid rgba(94,200,255,.24);
+}
+.rule b{ display:block; font-size:13.5px; font-weight:650; letter-spacing:-.01em; }
+.rule p{ margin:3px 0 0; font-size:12.5px; color:var(--ink-3); line-height:1.55; }
+
+/* ── region panel ───────────────────────────────────────────────── */
+.region-panel{
+  margin:20px 0; padding:20px; border-radius:var(--r-md);
+  background:linear-gradient(160deg,rgba(94,200,255,.09),rgba(94,200,255,.03));
+  border:1px solid rgba(94,200,255,.22);
+  box-shadow:var(--g-in),0 8px 24px rgba(0,0,0,.20);
+}
+.region-head{ display:flex; align-items:flex-start; gap:13px; margin-bottom:16px; }
+.region-ico{
+  width:36px; height:36px; flex:0 0 auto; border-radius:11px; display:grid; place-items:center;
+  font-size:14px; color:var(--sky);
+  background:rgba(94,200,255,.15); border:1px solid rgba(94,200,255,.3);
+}
+.region-head b{ display:block; font-size:14.5px; font-weight:650; letter-spacing:-.015em; }
+.region-head p{ margin:3px 0 0; font-size:12.5px; color:var(--ink-3); }
+.region-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:11px; }
+.region-chip{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 15px; border-radius:var(--r-sm);
+  background:rgba(255,255,255,.05); border:1px solid var(--g-edge);
+  box-shadow:var(--g-in);
+}
+.region-name{ font-size:13.5px; font-weight:600; letter-spacing:-.01em; }
+.region-chip code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px;
+  color:#9cd3f7; background:rgba(94,200,255,.14);
+  border:1px solid rgba(94,200,255,.24); padding:4px 9px; border-radius:7px;
+}
+
+/* ── side info card ─────────────────────────────────────────────── */
+.info-card{
+  background:var(--g-fill); border:1px solid var(--g-edge);
+  border-radius:var(--r-md); padding:26px;
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-sh),var(--g-in);
+  position:relative; overflow:hidden;
+}
+.info-card::before{ content:'';position:absolute;inset:0;pointer-events:none;background:var(--sheen); }
+.info-card > *{ position:relative; z-index:1; }
+.info-card h3{ font-size:15.5px; font-weight:650; letter-spacing:-.015em; }
+.info-card p{ font-size:13px; color:var(--ink-3); }
+.info-card a{
+  color:var(--violet-2); font-size:12.5px; font-weight:500;
+  text-decoration-color:rgba(169,155,255,.4); text-underline-offset:3px;
+}
+.info-card a:hover{ color:#c4b9ff; }
+
+/* ── floating help ──────────────────────────────────────────────── */
+.help-fab{
+  width:54px; height:54px;
+  background:linear-gradient(145deg,rgba(255,77,141,.92),rgba(216,27,96,.66)) !important;
+  border:1px solid rgba(255,150,190,.45);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:0 12px 32px rgba(216,27,96,.42),var(--g-in-hi) !important;
+  transition:transform .22s cubic-bezier(.34,1.4,.64,1),box-shadow .22s;
+}
+.help-fab:hover{ transform:translateY(-3px) scale(1.07); box-shadow:0 18px 44px rgba(216,27,96,.5),var(--g-in-hi) !important; }
+.help-fab:active{ transform:scale(.94); }
+
+/* ── modals ─────────────────────────────────────────────────────── */
+#pic-upload-modal,#access-restrict-modal,.glass-scrim{
+  background:rgba(0,0,0,.66) !important;
+  backdrop-filter:blur(12px) saturate(140%);-webkit-backdrop-filter:blur(12px) saturate(140%);
+}
+.glass-scrim{ position:fixed; inset:0; z-index:10000; justify-content:center; align-items:center; }
+.pic-modal-box,#access-restrict-modal .modal-content,.glass-modal{
+  background:rgba(16,16,22,.80) !important;
+  border:1px solid var(--g-edge-hi) !important;
+  border-radius:26px !important;
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:var(--g-sh-lg),var(--g-in) !important;
+  color:var(--ink) !important;
+}
+.glass-modal{ position:relative; max-width:400px; width:90%; padding:34px 28px 28px; }
+.modal-ico,.pic-modal-icon{
+  width:56px; height:56px; margin:0 auto 16px; border-radius:18px;
+  display:grid; place-items:center; font-size:23px; color:var(--violet-2);
+  background:rgba(124,107,255,.15) !important; border:1px solid rgba(124,107,255,.3);
+  box-shadow:var(--g-in);
+}
+.modal-title,.pic-modal-title{ font-size:19px; font-weight:650; letter-spacing:-.02em; text-align:center; margin:0; }
+.modal-sub,.pic-modal-sub{ font-size:12.5px; color:var(--ink-3); text-align:center; margin:6px 0 20px; }
+.modal-x,.pic-modal-close{
+  position:absolute; right:16px; top:16px;
+  width:32px; height:32px; border-radius:10px; cursor:pointer;
+  display:grid; place-items:center; font-size:13px;
+  color:var(--ink-3); background:rgba(255,255,255,.06);
+  border:1px solid var(--g-edge); box-shadow:var(--g-in);
+  transition:background .18s,color .18s;
+}
+.modal-x:hover,.pic-modal-close:hover{ background:rgba(255,255,255,.12); color:#fff; }
+
+.faq-list{ display:flex; flex-direction:column; gap:9px; }
+.faq{
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 14px; border-radius:var(--r-sm); font-size:13px; line-height:1.55;
+  background:rgba(255,255,255,.045); border:1px solid var(--g-edge);
+  box-shadow:var(--g-in);
+}
+.faq-ico{
+  width:28px; height:28px; flex:0 0 auto; border-radius:9px; display:grid; place-items:center;
+  font-size:11.5px; color:var(--violet-2);
+  background:rgba(124,107,255,.14); border:1px solid rgba(124,107,255,.26);
+}
+
+.pic-drop-zone{
+  background:rgba(255,255,255,.04) !important;
+  border:1.5px dashed var(--g-edge-hi) !important;
+  border-radius:18px !important; box-shadow:var(--g-in);
+  transition:background .2s,border-color .2s,transform .18s;
+}
+.pic-drop-zone:hover,.pic-drop-zone.drag-over{
+  background:rgba(124,107,255,.10) !important;
+  border-color:rgba(124,107,255,.6) !important; transform:translateY(-2px);
+}
+.pic-btn-save{
+  background:linear-gradient(145deg,rgba(124,107,255,.9),rgba(92,78,229,.66)) !important;
+  border-color:rgba(169,155,255,.5) !important; color:#fff !important;
+}
+.pic-btn-skip{
+  background:rgba(255,255,255,.05) !important; color:var(--ink-3) !important;
+  border-color:var(--g-edge) !important;
+}
+.pic-btn-skip:hover{ background:rgba(255,255,255,.11) !important; color:#fff !important; }
+.upload-progress-bar{
+  background:rgba(255,255,255,.09) !important; border-radius:6px; overflow:hidden; box-shadow:var(--g-in);
+}
+.upload-progress-fill{ background:linear-gradient(90deg,var(--violet),var(--violet-2),var(--mint)) !important; }
+#access-restrict-modal i{ color:var(--amber) !important; }
+
+/* ── profile pill ───────────────────────────────────────────────── */
+.pf-name{ font-size:14px; font-weight:600; letter-spacing:-.01em; line-height:1.3; }
+.pf-mail{ font-size:11.5px; color:var(--ink-3); margin:1px 0 6px; }
+.pf-logout{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:10.5px; font-weight:600; letter-spacing:.02em;
+  color:#ff9db8; text-decoration:none;
+  padding:4px 10px; border-radius:8px;
+  background:rgba(255,77,141,.10); border:1px solid rgba(255,77,141,.26);
+  transition:background .18s,color .18s,border-color .18s;
+}
+.pf-logout:hover{ background:rgba(255,77,141,.2); border-color:rgba(255,77,141,.5); color:#fff; }
+.stat-tile--danger .stat-ico{ color:#ff9db8; background:rgba(255,77,141,.13); border-color:rgba(255,77,141,.28); }
+
+/* ── profile panel ──────────────────────────────────────────────── */
+#firebase-profile-box{ cursor:pointer; transition:background .2s,border-color .2s,transform .16s; }
+#firebase-profile-box:hover{ background:var(--g-fill-2); border-color:var(--g-edge-hi); }
+#firebase-profile-box:active{ transform:scale(.985); }
+#firebase-profile-box:focus-visible{ outline:2px solid var(--violet); outline-offset:3px; }
+.pf-text{ min-width:0; }
+.avatar-overlay i{ font-size:12px; }
+#firebase-profile-box.is-open .avatar-overlay{ opacity:1; }
+#firebase-profile-box.is-open .avatar-overlay i{ transform:rotate(180deg); transition:transform .25s; }
+
+#profile-panel{
+  position:fixed; z-index:12000; width:296px; padding:20px;
+  border-radius:20px;
+  background:rgba(16,16,22,.80); border:1px solid var(--g-edge-hi);
+  backdrop-filter:var(--g-blur-lg);-webkit-backdrop-filter:var(--g-blur-lg);
+  box-shadow:var(--g-sh-lg),var(--g-in);
+  opacity:0; transform:translateY(-10px) scale(.96); pointer-events:none;
+  transition:opacity .24s ease,transform .24s cubic-bezier(.34,1.4,.64,1);
+}
+#profile-panel.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+
+.pp-top{ display:flex; align-items:center; gap:13px; margin-bottom:16px; }
+.pp-avatar{
+  width:52px; height:52px; flex:0 0 auto; border-radius:50%;
+  display:grid; place-items:center;
+  font-size:20px; font-weight:700; color:#fff;
+  background:linear-gradient(145deg,var(--violet),#5c4ee5);
+  background-size:cover; background-position:center;
+  box-shadow:0 6px 20px rgba(124,107,255,.4),var(--g-in-hi);
+}
+.pp-avatar.has-photo{ color:transparent; font-size:0; }
+.pp-id{ min-width:0; }
+.pp-name{
+  font-size:15.5px; font-weight:650; letter-spacing:-.015em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.pp-mail{
+  font-size:12px; color:var(--ink-3); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+.pp-stat{
+  display:flex; align-items:center; gap:12px;
+  padding:13px 15px; border-radius:var(--r-sm); margin-bottom:16px;
+  background:linear-gradient(145deg,rgba(255,200,61,.14),rgba(255,200,61,.05));
+  border:1px solid rgba(255,200,61,.28);
+  box-shadow:var(--g-in);
+}
+.pp-stat-ico{
+  width:34px; height:34px; flex:0 0 auto; border-radius:10px; display:grid; place-items:center;
+  font-size:14px; color:var(--amber);
+  background:rgba(255,200,61,.16); border:1px solid rgba(255,200,61,.3);
+}
+.pp-stat-key{
+  display:block; font-size:9.5px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:rgba(255,233,168,.6); margin-bottom:2px;
+}
+.pp-stat-val{
+  display:block; font-size:20px; font-weight:700; color:#ffe9a8;
+  letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+}
+
+.pp-actions{ display:flex; flex-direction:column; gap:8px; }
+.pp-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:11px 14px; border-radius:var(--r-sm); cursor:pointer;
+  font-family:inherit; font-size:13px; font-weight:600; color:var(--ink);
+  background:rgba(255,255,255,.055); border:1px solid var(--g-edge);
+  box-shadow:var(--g-in);
+  transition:background .18s,border-color .18s,transform .14s,color .18s;
+}
+.pp-btn:hover{ background:rgba(255,255,255,.11); border-color:var(--g-edge-hi); }
+.pp-btn:active{ transform:scale(.97); }
+.pp-btn--danger{ color:#ff9db8; border-color:rgba(255,77,141,.26); background:rgba(255,77,141,.08); }
+.pp-btn--danger:hover{ background:rgba(255,77,141,.18); border-color:rgba(255,77,141,.5); color:#fff; }
+
+@media (max-width:760px){
+  #profile-panel{ width:calc(100vw - 28px); right:14px !important; }
+  .pf-text{ display:none; }
+}
+
+/* ── points pill ────────────────────────────────────────────────── */
+.pf-points{
+  display:flex; align-items:baseline; gap:6px;
+  margin-left:6px; padding:9px 15px; border-radius:12px;
+  background:linear-gradient(145deg,rgba(255,200,61,.16),rgba(255,200,61,.06));
+  border:1px solid rgba(255,200,61,.3);
+  box-shadow:var(--g-in),0 4px 14px rgba(255,200,61,.10);
+  transform-origin:center;
+}
+.pf-points i{
+  font-size:12px; color:var(--amber); align-self:center;
+  filter:drop-shadow(0 0 6px rgba(255,200,61,.5));
+}
+.pf-points span{
+  font-size:17px; font-weight:700; color:#ffe9a8;
+  letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+}
+.pf-points small{ font-size:10px; font-weight:600; color:rgba(255,233,168,.55); letter-spacing:.06em; }
+@media (max-width:760px){ .pf-points{ margin-left:0; } }
+
+/* ── toast ──────────────────────────────────────────────────────── */
+.glass-toast{
+  position:fixed; bottom:86px; right:30px; z-index:13000;
+  display:flex; align-items:center; gap:10px;
+  padding:12px 18px; border-radius:14px;
+  font-size:13.5px; font-weight:500; color:var(--ink);
+  background:rgba(16,16,22,.82); border:1px solid var(--g-edge-hi);
+  backdrop-filter:var(--g-blur);-webkit-backdrop-filter:var(--g-blur);
+  box-shadow:var(--g-sh-lg),var(--g-in);
+  opacity:0; transform:translateY(12px) scale(.96);
+  transition:opacity .26s ease,transform .26s cubic-bezier(.34,1.4,.64,1);
+}
+.glass-toast.in{ opacity:1; transform:translateY(0) scale(1); }
+.toast-ico{
+  width:26px; height:26px; flex:0 0 auto; border-radius:8px; display:grid; place-items:center;
+  font-size:12px; color:var(--mint);
+  background:rgba(47,212,139,.14); border:1px solid rgba(47,212,139,.28);
+}
+.glass-toast.is-error{ border-color:rgba(255,77,141,.4); }
+.glass-toast.is-error .toast-ico{ color:#ff9db8; background:rgba(255,77,141,.14); border-color:rgba(255,77,141,.3); }
+
+/* ── responsive ─────────────────────────────────────────────────── */
+@media (max-width:1000px){
+  .content-layout{ grid-template-columns:1fr; gap:26px; }
+}
+@media (max-width:760px){
+  body{ padding:24px 14px 80px; }
+  .main-panel{ padding:20px; border-radius:20px; }
+  .header{ flex-wrap:wrap; }
+  #firebase-profile-box{ margin-left:0; }
+  .inputs-grid{ grid-template-columns:1fr; }
+  .stat-tile{ flex:1 1 100%; }
+  h1{ font-size:22px; }
+}
+
+/* Without backdrop-filter, fall back to near-opaque fills so nothing
+   becomes unreadable. */
+@supports not (backdrop-filter: blur(1px)){
+  .main-panel,.info-card,.pic-modal-box,.glass-modal,
+  #access-restrict-modal .modal-content,#firebase-profile-box{
+    background:rgba(14,14,20,.96) !important;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .rule:hover{ transform:none; }
+  .help-fab:hover{ transform:none; }
+}
+</style>
+
+</head>
+<body>
+
+<div id="aurora-bg">
+    <div class="aurora-blob b1"></div>
+    <div class="aurora-blob b2"></div>
+    <div class="aurora-blob b3"></div>
+</div>
+<div id="grid-overlay"></div>
+<div id="ray-field" aria-hidden="true">
+    <span class="ray" style="--a:-19deg;--x:12%;--d:26s;--w:170px;--o:.30;"></span>
+    <span class="ray" style="--a:-9deg; --x:29%;--d:34s;--w:240px;--o:.22;"></span>
+    <span class="ray" style="--a:4deg;  --x:48%;--d:29s;--w:200px;--o:.26;"></span>
+    <span class="ray" style="--a:13deg; --x:68%;--d:38s;--w:280px;--o:.18;"></span>
+    <span class="ray" style="--a:22deg; --x:86%;--d:31s;--w:190px;--o:.24;"></span>
+</div>
+<canvas id="particle-canvas"></canvas>
+
+<div class="sandbox-container">
+    <header class="header anim-reveal">
+        <div class="logo-section">
+            <div class="title-block">
+                <div class="eyebrow">Amazon Web Services</div>
+                <h1>AWS Girls – 3</h1>
+                <div class="usage-meter" id="practiceMeter" title="Practise 8 hours today to earn 400 points">
+                    <span class="usage-caption">Practice goal</span>
+                    <div class="pr-track"><i class="pr-fill" id="practiceFill"></i></div>
+                    <span class="usage-label" id="practiceLabel">0h 0m / 8h</span>
+                    <span class="pr-reward" id="practiceReward"><i class="fas fa-star"></i> 400</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-panel anim-reveal">
+        <div class="action-bar">
+            <div class="btn-group">
+                <button class="start-btn pulse-glow" id="btn-start">
+                    <i class="fas fa-play" id="start-icon"></i>
+                    <span id="start-label">Start Sandbox</span>
+                </button>
+                <button class="delete-btn" id="btn-delete" disabled=""><i class="fas fa-trash-can"></i> Delete Sandbox</button>
+                <button class="open-btn" id="btn-open" disabled="">Open Sandbox</button>
+            </div>
+
+            <!-- URL Section -->
+            <div class="url-section">
+                <label>Sandbox URL</label>
+
+                <!-- Shown BEFORE start: lock notice -->
+                <div id="url-locked-notice">
+                    <span class="lock-icon"><i class="fas fa-lock"></i></span>
+                    <div>
+                        <p class="lock-title">URL is encrypted</p>
+                        <p class="lock-sub">The sandbox URL is hidden for security. Start the sandbox to reveal it.</p>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+        <div class="status-bar" id="status-bar">
+            <div class="stat-tile">
+                <span class="stat-ico"><i class="far fa-clock"></i></span>
+                <div>
+                    <span class="stat-key">Usage window</span>
+                    <span class="stat-val">9:00 AM &ndash; 7:30 PM</span>
+                </div>
+            </div>
+            <div class="stat-tile">
+                <span class="stat-ico"><i class="fas fa-hourglass-half"></i></span>
+                <div>
+                    <span class="stat-key">Time left today</span>
+                    <span class="stat-val" id="usage-timer">--:--:--</span>
+                </div>
+            </div>
+            <div class="stat-tile stat-tile--status">
+                <span class="stat-ico"><i class="fas fa-server"></i></span>
+                <div>
+                    <span class="stat-key">Sandbox</span>
+                    <span id="sandbox-status-badge" class="badge-stopped">
+                        <span class="badge-dot"></span> Stopped
+                    </span>
+                </div>
+            </div>
+            <span class="sr-only">
+                <script>
+                (function(){
+                    function pad(n){return("0"+n).slice(-2);}
+                    function tick(){
+                        var now=new Date(),s=new Date(now),e=new Date(now);
+                        s.setHours(9,0,0,0); e.setHours(18,0,0,0);
+                        var el=document.getElementById("usage-timer"); if(!el)return;
+                        if(now<s){var d=s-now;el.textContent=pad(Math.floor(d/3600000))+":"+pad(Math.floor((d%3600000)/60000))+":"+pad(Math.floor((d%60000)/1000))+" (until open)";el.style.color="#ff9db8";}
+                        else if(now<e){var d=e-now;el.textContent=pad(Math.floor(d/3600000))+":"+pad(Math.floor((d%3600000)/60000))+":"+pad(Math.floor((d%60000)/1000));el.style.color="#7ef0bd";}
+                        else{el.textContent="00:00:00 (closed)";el.style.color="#ff9db8";}
+                    }
+                    setInterval(tick,1000);tick();
+                })();
+                </script>
+            </span>
+        </div>
+
+        <div class="alert alert--amber">
+            <span class="alert-ico"><i class="fas fa-shield-halved"></i></span>
+            <div><strong>Usage is monitored.</strong> If suspicious activity is detected, your access will be removed.</div>
+        </div>
+
+        <div class="content-layout">
+            <div>
+                <div class="section-head">
+                    <span class="section-ico"><i class="fas fa-key"></i></span>
+                    <div><b>Console credentials</b><p>Revealed once the sandbox is running.</p></div>
+                </div>
+                <div class="creds-wrapper creds-locked" id="creds-wrapper">
+                    <div class="inputs-grid">
+                        <div class="input-group">
+                            <label for="user">Username <i class="far fa-circle-question"></i></label>
+                            <div class="field-container">
+                                <input type="text" value="cloud_user" id="user" readonly="">
+                                <i class="far fa-copy" data-copy-target="user"></i>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="pass">Password <i class="far fa-circle-question"></i></label>
+                            <div class="field-container">
+                                <input type="password" value="REPLACE_WITH_AWS_G3_PASSWORD" id="pass" readonly="">
+                                <i class="far fa-eye" data-toggle-pass="pass"></i>
+                                <i class="far fa-copy" data-copy-target="pass" style="margin-left:6px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert--amber">
+                    <span class="alert-ico"><i class="fas fa-triangle-exclamation"></i></span>
+                    <div><strong>Instance limit.</strong> Up to <b>9 instances</b>, and every instance name <b>must include your name</b>.</div>
+                </div>
+
+                <div class="rule-list">
+                    <div class="rule">
+                        <span class="rule-ico"><i class="fas fa-earth-americas"></i></span>
+                        <div><b>Region usage policy</b><p>Resources may only be created in enabled regions. Maximum <strong>9 instances</strong>.</p></div>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-ico"><i class="fas fa-coins"></i></span>
+                        <div><b>Billing &amp; resource limits</b><p>High-cost resources are monitored and may be terminated without notice.</p></div>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-ico"><i class="fas fa-eye"></i></span>
+                        <div><b>Session monitoring</b><p>All actions are monitored and logged.</p></div>
+                    </div>
+                </div>
+
+            </div>
+            <aside class="side-col">
+                <div class="info-card">
+                    <h3>Extend Your Session</h3>
+                    <p>Your sandbox expires 4 hours after start. You'll receive a notification with 1 hour remaining to extend for another 4 hours.</p>
+                    <a href="https://docs.aws.amazon.com/console/open-console-using-incognito" target="_blank" rel="noopener">Learn more in our Knowledge base.</a>
+                </div>
+                <div class="region-panel">
+                    <div class="region-head">
+                        <span class="region-ico"><i class="fas fa-location-dot"></i></span>
+                        <div>
+                            <b>Region access restriction</b>
+                            <p>These are the only regions available to you.</p>
+                        </div>
+                    </div>
+                    <div class="region-grid">
+                        <div class="region-chip">
+                            <span class="region-name">N. Virginia</span>
+                            <code>us-east-1</code>
+                        </div>
+                        <div class="region-chip">
+                            <span class="region-name">Oregon</span>
+                            <code>us-west-2</code>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<div class="help-fab" id="help-fab"><i class="fas fa-question" style="color:white;font-size:20px;"></i></div>
+
+<!-- Access Restriction Modal -->
+<div id="access-restrict-modal">
+    <div class="modal-content">
+        <i class="fas fa-sun"></i><br>
+        <b>Daytime Access Only</b>
+        <div style="margin-top:14px;font-size:16px;">Sandbox access is only available <b>9:00 AM to 7:30 PM</b>.</div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="help-modal" class="glass-scrim">
+    <div class="glass-modal">
+        <button class="modal-x" onclick="document.getElementById('help-modal').style.display='none';"><i class="fas fa-xmark"></i></button>
+        <div class="modal-ico"><i class="fas fa-circle-question"></i></div>
+        <h2 class="modal-title">Help &amp; FAQs</h2>
+        <p class="modal-sub">Quick answers for using the sandbox.</p>
+        <div class="faq-list">
+            <div class="faq"><span class="faq-ico"><i class="fas fa-user-secret"></i></span><div>Use <strong>Incognito mode</strong> for the AWS Sandbox.</div></div>
+            <div class="faq"><span class="faq-ico"><i class="far fa-copy"></i></span><div>Click the copy icons to copy your credentials.</div></div>
+            <div class="faq"><span class="faq-ico"><i class="fas fa-camera"></i></span><div>Click your <strong>profile picture</strong> to update it anytime.</div></div>
+            <div class="faq"><span class="faq-ico"><i class="fas fa-play"></i></span><div>Click <strong>Start Sandbox</strong> to reveal credentials and the URL.</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Picture Upload Modal -->
+<div id="pic-upload-modal">
+    <div class="pic-modal-box">
+        <button class="pic-modal-close" id="pic-modal-close-btn"><i class="fas fa-xmark"></i></button>
+        <div class="pic-modal-icon"><i class="fas fa-circle-user"></i></div>
+        <div class="pic-modal-title" id="pic-modal-title">Profile photo</div>
+        <div class="pic-modal-sub" id="pic-modal-sub">Upload an image to use as your avatar</div>
+
+        <div class="pic-drop-zone" id="pic-drop-zone">
+            <div class="pic-drop-placeholder" id="pic-drop-placeholder">
+                <i class="fas fa-cloud-arrow-up"></i>
+                <span><strong>Click to browse</strong> or drag &amp; drop</span>
+                <span style="font-size:11px;opacity:0.7;">JPG · PNG · GIF · WEBP &nbsp;·&nbsp; max 5 MB</span>
+            </div>
+            <div id="pic-preview-wrap">
+                <img id="pic-preview-img" src="" alt="Preview">
+                <span style="font-size:12px;color:#b5b3c5;">Looking good — hit Save!</span>
+            </div>
+        </div>
+
+        <input type="file" id="pic-file-input" accept="image/*">
+
+        <div class="upload-progress-wrap" id="upload-progress-wrap">
+            <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="upload-progress-fill"></div>
+            </div>
+            <div class="upload-progress-label" id="upload-progress-label">Uploading…</div>
+        </div>
+
+        <div class="pic-modal-btns">
+            <button class="pic-btn-save" id="pic-btn-save">
+                <i class="fas fa-cloud-arrow-up"></i> Save to Cloud
+            </button>
+            <button class="pic-btn-skip" id="pic-btn-skip">Skip for now</button>
+        </div>
+    </div>
+</div>
+
+<!-- EmailJS -->
+<script>
+var ACCOUNTS=[
+  {pub:"Konv-Orb1HYWd9_Oc",svc:"service_ekaiwst",tpl:"template_guqi5ir"},
+  {pub:"3lgmY4tUFXOfhaPiu", svc:"service_h6hmww9",tpl:"template_wlx7d6m"},
+  {pub:"xbB_V_n_GHHtwrTKO",svc:"service_bhvz6wq",tpl:"template_xzh6knc"}
+];
+var _byeSent=false;
+window.sendGoodbyeEmail=function(){
+  if(_byeSent)return;_byeSent=true;
+  var name=(document.getElementById("profileUsername")||{}).textContent||"User";
+  var userEmail=(document.getElementById("profileEmail")||{}).textContent||"";
+  var labelText=(document.getElementById("practiceLabel")||{}).textContent||"0h 0m / 8h";
+  var dateStr=new Date().toLocaleDateString("en-IN",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  if(!userEmail||userEmail.trim()===""){_byeSent=false;return;}
+  var acc=ACCOUNTS[Math.floor(Math.random()*ACCOUNTS.length)];
+  fetch("https://api.emailjs.com/api/v1.0/email/send",{
+    method:"POST",keepalive:true,
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({service_id:acc.svc,template_id:acc.tpl,user_id:acc.pub,
+      template_params:{name,email:userEmail,to_name:name,to_email:userEmail,user_email:userEmail,usage_time:labelText,date:dateStr}})
+  }).then(r=>console.log("Email sent:",r.status)).catch(e=>console.error("Email error:",e));
+};
+window.addEventListener("pagehide",function(){if(!window._loggingOut)window.sendGoodbyeEmail();});
+</script>
+
+<!-- Firebase: Auth + Storage -->
+<script type="module">
+import { initializeApp }                         from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getAnalytics }                          from "https://www.gstatic.com/firebasejs/12.12.1/firebase-analytics.js";
+import { getAuth, onAuthStateChanged, signOut }  from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+import {
+    getStorage, ref as storageRef,
+    uploadBytesResumable, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-storage.js";
+import {
+    getFirestore, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, increment
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyCnuw9gryQYmk3SXVyJyw9piH5VpuapDj4",
+  authDomain: "veera730pmoffline.firebaseapp.com",
+  projectId: "veera730pmoffline",
+  storageBucket: "veera730pmoffline.firebasestorage.app",
+  messagingSenderId: "302438121216",
+  appId: "1:302438121216:web:bb010db38d4225d656bde5",
+  measurementId: "G-624V2DN4F8"
+});
+const analytics = getAnalytics(app);
+const auth      = getAuth(app);
+const storage   = getStorage(app);
+const db        = getFirestore(app);
+
+/* ══════════════════════════════════════════════════════════════
+   POINTS
+   The same veeraUsers/{uid} document the dashboard and the Hands-On
+   Playground use, so the total shown here is the student's real total.
+   Starting the sandbox earns 150 points, once per calendar day. The
+   "already claimed" flag lives on that day's Firestore document — not in
+   localStorage — so it holds across devices and private windows, and
+   clearing site data can't earn it twice.
+   ══════════════════════════════════════════════════════════════ */
+const SANDBOX_START_BONUS = 150;
+
+function pointsDayKey(){
+    const d = new Date();
+    return d.getFullYear() + '-' +
+           String(d.getMonth() + 1).padStart(2, '0') + '-' +
+           String(d.getDate()).padStart(2, '0');
+}
+
+function renderPoints(total){
+    const big = document.getElementById('pp-points');
+    if(big) big.textContent = Number(total).toLocaleString();
+    const el = document.getElementById('pointsValue');
+    if(!el) return;
+    const from = parseInt(el.dataset.v || '0', 10);
+    el.dataset.v = total;
+    if(typeof gsap === 'undefined' || from === total){
+        el.textContent = Number(total).toLocaleString();
+        return;
+    }
+    const o = { n: from };
+    gsap.to(o, {
+        n: total, duration: 0.9, ease: 'power2.out',
+        onUpdate(){ el.textContent = Math.round(o.n).toLocaleString(); }
+    });
+    const pill = document.getElementById('pointsPill');
+    if(pill && total > from){
+        gsap.fromTo(pill, { scale: 1 }, { scale: 1.09, duration: 0.22, yoyo: true, repeat: 1, ease: 'power2.out' });
+    }
+}
+
+/* One transaction: read the day, and only write if it hasn't been claimed. */
+async function awardStartBonus(uid){
+    const userRef = doc(db, 'veeraUsers', uid);
+    const dayRef  = doc(db, 'veeraUsers', uid, 'dailyPoints', pointsDayKey());
+    let awarded = false;
+
+    await runTransaction(db, async (tx) => {
+        /* Firestore re-runs this if the document changed underneath us, so
+           the flag has to reset on every attempt. */
+        awarded = false;
+
+        const snap = await tx.get(dayRef);
+        const data = snap.exists() ? snap.data() : {};
+        if(data.sandboxStartBonus) return;          // already claimed today
+
+        tx.set(dayRef, {
+            points: (data.points || 0) + SANDBOX_START_BONUS,
+            sandboxStartBonus: SANDBOX_START_BONUS,
+            sandboxStartAt: serverTimestamp()
+        }, { merge: true });
+
+        tx.set(userRef, { totalPoints: increment(SANDBOX_START_BONUS) }, { merge: true });
+        awarded = true;
+    });
+
+    return awarded;
+}
+
+/* ── the daily practice goal ───────────────────────────────────────
+   Eight hours of practice in a day earns 400 points, once per day. Like
+   every other bonus, the claim flag lives on that day's Firestore
+   document, so it can't be earned twice from another device.          */
+const PRACTICE_GOAL_SEC   = 8 * 60 * 60;   // 8 hours
+const PRACTICE_GOAL_BONUS = 400;
+
+async function awardPracticeBonus(uid){
+    const userRef = doc(db, 'veeraUsers', uid);
+    const dayRef  = doc(db, 'veeraUsers', uid, 'dailyPoints', pointsDayKey());
+    let awarded = false;
+
+    await runTransaction(db, async (tx) => {
+        awarded = false;                       // reset on every retry attempt
+        const snap = await tx.get(dayRef);
+        const data = snap.exists() ? snap.data() : {};
+        if(data.practiceGoalBonus) return;     // already earned today
+
+        tx.set(dayRef, {
+            points: (data.points || 0) + PRACTICE_GOAL_BONUS,
+            practiceGoalBonus: PRACTICE_GOAL_BONUS,
+            practiceGoalAt: serverTimestamp()
+        }, { merge: true });
+
+        tx.set(userRef, { totalPoints: increment(PRACTICE_GOAL_BONUS) }, { merge: true });
+        awarded = true;
+    });
+
+    return awarded;
+}
+
+let practiceClaimAttempted = false;
+const pad2 = n => String(n).padStart(2, '0');
+
+function updateUsageDisplay(totalSec, uid){
+    const sec  = Math.max(0, Math.floor(totalSec));
+    const hrs  = Math.floor(sec / 3600);
+    const mins = Math.floor((sec % 3600) / 60);
+    const secs = sec % 60;
+    const pct  = Math.max(0, Math.min(100, (sec / PRACTICE_GOAL_SEC) * 100));
+    const done = sec >= PRACTICE_GOAL_SEC;
+
+    const fill = document.getElementById("practiceFill");
+    if(fill) fill.style.width = pct.toFixed(2) + "%";
+
+    const lbl = document.getElementById("practiceLabel");
+    if(lbl) lbl.textContent = done
+        ? "8h reached \u2014 goal complete"
+        : hrs + "h " + pad2(mins) + "m " + pad2(secs) + "s / 8h";
+
+    const meter = document.getElementById("practiceMeter");
+    if(meter) meter.classList.toggle("is-done", done);
+
+    /* claim as soon as they cross 8 hours; the transaction is the real guard,
+       this flag just stops a request firing on every tick */
+    if(done && uid && !practiceClaimAttempted){
+        practiceClaimAttempted = true;
+        awardPracticeBonus(uid)
+            .then(won => {
+                if(won && typeof showStatus === 'function'){
+                    showStatus('+' + PRACTICE_GOAL_BONUS + ' points \u2014 8 hours of practice today', 4000);
+                }
+            })
+            .catch(e => { practiceClaimAttempted = false; console.error('Practice bonus failed:', e); });
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRACTICE TIME — counted in seconds, banked on the server
+   The tally lives on veeraUsers/{uid}/dailyPoints/{day}.practiceSeconds.
+   Nothing is kept in localStorage, so it follows the student across
+   devices and private windows, survives a cache clear, and can't be
+   edited from the browser to fake the 8-hour bonus.
+
+   Time accrues from a heartbeat rather than from (now - startTime): if
+   the machine sleeps or the tab is frozen, the gap is discarded instead
+   of being credited as practice. The screen ticks every second; the
+   server is written once a minute and whenever the tab is hidden or
+   closed, which keeps writes low without losing time.
+   ══════════════════════════════════════════════════════════════ */
+const PRACTICE_TICK_MS   = 1000;
+const PRACTICE_FLUSH_MS  = 60000;
+const PRACTICE_MAX_GAP_S = 90;      // anything longer is sleep, not practice
+
+let practiceBase    = 0;            // seconds already banked today, per the server
+let practiceAccrued = 0;            // seconds counted in this session
+let practiceLastTick = 0;
+let practiceFlushed = -1;           // last value successfully written
+
+function practiceDayRef(uid){
+    return doc(db, 'veeraUsers', uid, 'dailyPoints', pointsDayKey());
+}
+function practiceTotal(){
+    return Math.floor(practiceBase + practiceAccrued);
+}
+
+/* Advance the session clock by the real elapsed time, ignoring long gaps. */
+function practiceTick(){
+    const now = Date.now();
+    if(practiceLastTick){
+        const gap = (now - practiceLastTick) / 1000;
+        if(gap > 0 && gap < PRACTICE_MAX_GAP_S) practiceAccrued += gap;
+    }
+    practiceLastTick = now;
+}
+
+/* Never let the total go backwards, and adopt a higher figure if another
+   device has been adding time. */
+async function flushPractice(uid){
+    const total = practiceTotal();
+    if(total <= practiceFlushed) return;
+
+    try {
+        await runTransaction(db, async (tx) => {
+            const ref  = practiceDayRef(uid);
+            const snap = await tx.get(ref);
+            const data = snap.exists() ? snap.data() : {};
+            const onServer = data.practiceSeconds != null
+                ? data.practiceSeconds
+                : (data.practiceMinutes || 0) * 60;      // migrate older records
+            const merged = Math.max(onServer, total);
+
+            practiceBase = merged - practiceAccrued;     // rebase to the agreed figure
+
+            if(merged === onServer) return;
+            tx.set(ref, {
+                practiceSeconds: merged,
+                practiceMinutes: Math.floor(merged / 60),  // kept readable for reports
+                practiceUpdatedAt: serverTimestamp()
+            }, { merge: true });
+        });
+        practiceFlushed = practiceTotal();
+    } catch(e){
+        console.error('Practice time flush failed:', e);   // retried on the next pass
+    }
+}
+
+async function startUsageTracking(uid){
+    /* pick up today's tally from the server before starting the clock */
+    try {
+        const snap = await getDoc(practiceDayRef(uid));
+        const d = snap.exists() ? snap.data() : {};
+        practiceBase = d.practiceSeconds != null
+            ? d.practiceSeconds
+            : (d.practiceMinutes || 0) * 60;
+    } catch(e){
+        practiceBase = 0;
+        console.error('Could not read today\'s practice time:', e);
+    }
+    practiceAccrued  = 0;
+    practiceLastTick = Date.now();
+
+    updateUsageDisplay(practiceTotal(), uid);
+    setInterval(() => { practiceTick(); updateUsageDisplay(practiceTotal(), uid); }, PRACTICE_TICK_MS);
+    setInterval(() => flushPractice(uid), PRACTICE_FLUSH_MS);
+
+    /* coming back from a hidden tab or a sleeping machine: close off the gap
+       cleanly so it is neither credited nor lost */
+    document.addEventListener('visibilitychange', () => {
+        if(document.hidden){
+            practiceTick();
+            flushPractice(uid);
+        } else {
+            practiceLastTick = Date.now();     // discard the time spent away
+        }
+    });
+    window.addEventListener('pagehide', () => { practiceTick(); flushPractice(uid); });
+
+    /* if another device is also counting, follow along live */
+    onSnapshot(practiceDayRef(uid), snap => {
+        if(!snap.exists()) return;
+        const d = snap.data();
+        const onServer = d.practiceSeconds != null
+            ? d.practiceSeconds
+            : (d.practiceMinutes || 0) * 60;
+        if(onServer > practiceTotal()){
+            practiceBase = onServer - practiceAccrued;
+            updateUsageDisplay(practiceTotal(), uid);
+        }
+    }, err => console.error('Practice listener failed:', err));
+}
+
+function applyAvatarUrl(url){
+    if(!url)return;
+    /* the header chip and the profile panel share the same photo */
+    const av=document.getElementById("avatar");
+    if(av){
+        av.style.backgroundImage="url('"+url+"')";
+        av.style.backgroundSize="cover";
+        av.style.backgroundPosition="center";
+        av.style.backgroundColor="transparent";
+        av.style.fontSize="0";
+        av.textContent="";
+    }
+    const pp=document.getElementById("pp-avatar");
+    if(pp){
+        pp.style.backgroundImage="url('"+url+"')";
+        pp.classList.add("has-photo");
+        pp.textContent="";
+    }
+}
+function picRef(uid){ return storageRef(storage,"profile_pics/"+uid+"/avatar"); }
+async function loadExistingPic(uid){
+    try{ return await getDownloadURL(picRef(uid)); }
+    catch{ return null; }
+}
+
+let _pendingFile=null, _currentUid=null;
+
+function initModal(){
+    const modal=document.getElementById("pic-upload-modal");
+    const dropZone=document.getElementById("pic-drop-zone");
+    const fileInput=document.getElementById("pic-file-input");
+    const prevWrap=document.getElementById("pic-preview-wrap");
+    const prevImg=document.getElementById("pic-preview-img");
+    const placeholder=document.getElementById("pic-drop-placeholder");
+    const saveBtn=document.getElementById("pic-btn-save");
+    const skipBtn=document.getElementById("pic-btn-skip");
+    const closeBtn=document.getElementById("pic-modal-close-btn");
+    const progWrap=document.getElementById("upload-progress-wrap");
+    const progFill=document.getElementById("upload-progress-fill");
+    const progLbl=document.getElementById("upload-progress-label");
+
+    function reset(){
+        _pendingFile=null;
+        if(fileInput)fileInput.value="";
+        prevWrap.style.display="none";
+        placeholder.style.display="flex";
+        saveBtn.style.display="none";
+        saveBtn.disabled=false;
+        saveBtn.innerHTML='<i class="fas fa-cloud-arrow-up"></i> Save to Cloud';
+        progWrap.style.display="none";
+        progFill.style.width="0%";
+        closeBtn.style.display="none";
+        skipBtn.style.display="none";
+    }
+
+    window._openPicModal=function(uid,firstTime){
+        _currentUid=uid; reset();
+        document.getElementById("pic-modal-title").textContent="Profile photo";
+        document.getElementById("pic-modal-sub").textContent="Upload an image to use as your avatar";
+        skipBtn.textContent="Cancel";
+        modal.classList.add("show");
+    };
+    window._closePicModal=function(){modal.classList.remove("show");reset();};
+
+    function previewFile(file){
+        if(!file.type.startsWith("image/")){showStatus("Please choose an image file",1800,true);return;}
+        if(file.size>5*1024*1024){showStatus("Image must be under 5 MB",1800,true);return;}
+        _pendingFile=file;
+        const r=new FileReader();
+        r.onload=e=>{
+            prevImg.src=e.target.result;
+            prevWrap.style.display="flex";
+            placeholder.style.display="none";
+            saveBtn.style.display="inline-flex";
+            closeBtn.style.display="block";
+            skipBtn.style.display="inline-block";
+        };
+        r.readAsDataURL(file);
+    }
+
+    dropZone.addEventListener("click",()=>fileInput.click());
+    dropZone.addEventListener("dragover",e=>{e.preventDefault();dropZone.classList.add("drag-over");});
+    dropZone.addEventListener("dragleave",()=>dropZone.classList.remove("drag-over"));
+    dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remove("drag-over");if(e.dataTransfer.files[0])previewFile(e.dataTransfer.files[0]);});
+    fileInput.addEventListener("change",()=>{if(fileInput.files[0])previewFile(fileInput.files[0]);});
+    skipBtn.addEventListener("click",window._closePicModal);
+    closeBtn.addEventListener("click",window._closePicModal);
+    modal.addEventListener("click",e=>{if(e.target===modal)window._closePicModal();});
+
+    saveBtn.addEventListener("click",()=>{
+        if(!_pendingFile||!_currentUid)return;
+        saveBtn.disabled=true;
+        saveBtn.innerHTML='<i class="fas fa-circle-notch spin"></i> Uploading…';
+        progWrap.style.display="block";
+        const task=uploadBytesResumable(picRef(_currentUid),_pendingFile,{contentType:_pendingFile.type});
+        task.on("state_changed",
+            snap=>{const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);progFill.style.width=pct+"%";progLbl.textContent="Uploading… "+pct+"%";},
+            err=>{console.error("Upload failed:",err);showStatus("Veera Cloud: Upload failed. Please try again.",3500,true);saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-cloud-arrow-up"></i> Save to Cloud';progWrap.style.display="none";},
+            async ()=>{const url=await getDownloadURL(task.snapshot.ref);applyAvatarUrl(url);window._closePicModal();showStatus("✅ Profile photo saved to cloud!",2400);}
+        );
+    });
+}
+
+onAuthStateChanged(auth, async user=>{
+    if(!user){window.location.href="main.html";return;}
+    const header=document.querySelector(".header");
+    if(!document.getElementById("firebase-profile-box")){
+        const box=document.createElement("div");
+        box.id="firebase-profile-box";
+        box.setAttribute("role","button");
+        box.setAttribute("tabindex","0");
+        box.title="View your profile";
+        box.innerHTML=`
+            <div class="avatar-wrap" id="avatar-wrap">
+                <div id="avatar"></div>
+                <div class="avatar-overlay"><i class="fas fa-chevron-down"></i></div>
+            </div>
+            <div class="pf-text">
+                <div id="profileUsername" class="pf-name"></div>
+                <div id="profileEmail" class="pf-mail"></div>
+            </div>
+            <div class="pf-points" id="pointsPill" title="Your Cloud iNIT points">
+                <i class="fas fa-star"></i>
+                <span id="pointsValue" data-v="0">0</span>
+                <small>pts</small>
+            </div>`;
+        header.appendChild(box);
+
+        /* ── the panel that opens on click ── */
+        const panel=document.createElement("div");
+        panel.id="profile-panel";
+        panel.innerHTML=`
+            <div class="pp-top">
+                <div class="pp-avatar" id="pp-avatar"></div>
+                <div class="pp-id">
+                    <div class="pp-name" id="pp-name">User</div>
+                    <div class="pp-mail" id="pp-mail"></div>
+                </div>
+            </div>
+            <div class="pp-stat">
+                <span class="pp-stat-ico"><i class="fas fa-star"></i></span>
+                <div>
+                    <span class="pp-stat-key">Total points</span>
+                    <span class="pp-stat-val" id="pp-points">0</span>
+                </div>
+            </div>
+            <div class="pp-actions">
+                <button class="pp-btn" id="pp-photo"><i class="fas fa-camera"></i> Change photo</button>
+                <button class="pp-btn pp-btn--danger" id="pp-signout"><i class="fas fa-arrow-right-from-bracket"></i> Sign out</button>
+            </div>`;
+        document.body.appendChild(panel);
+
+        function closePanel(){ panel.classList.remove("open"); box.classList.remove("is-open"); }
+        function togglePanel(){
+            const open=!panel.classList.contains("open");
+            panel.classList.toggle("open",open);
+            box.classList.toggle("is-open",open);
+            if(open) positionPanel();
+        }
+        function positionPanel(){
+            const r=box.getBoundingClientRect();
+            panel.style.top=(r.bottom+10)+"px";
+            panel.style.right=Math.max(14,window.innerWidth-r.right)+"px";
+        }
+        box.addEventListener("click",e=>{ e.stopPropagation(); togglePanel(); });
+        box.addEventListener("keydown",e=>{
+            if(e.key==="Enter"||e.key===" "){ e.preventDefault(); togglePanel(); }
+        });
+        panel.addEventListener("click",e=>e.stopPropagation());
+        document.addEventListener("click",closePanel);
+        document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePanel(); });
+        window.addEventListener("resize",()=>{ if(panel.classList.contains("open")) positionPanel(); });
+        window._closeProfilePanel=closePanel;
+    }
+
+    /* live points total, and the award hook the Start button calls */
+    onSnapshot(doc(db, 'veeraUsers', user.uid),
+        snap => renderPoints(snap.exists() ? (snap.data().totalPoints || 0) : 0),
+        err  => console.error('Points listener failed:', err));
+
+    window.__awardStartBonus = async function(){
+        try {
+            const won = await awardStartBonus(user.uid);
+            if(won && typeof showStatus === 'function'){
+                showStatus('+' + SANDBOX_START_BONUS + ' points — daily sandbox bonus', 3200);
+            }
+        } catch(e){ console.error('Start bonus failed:', e); }
+    };
+    const av=document.getElementById("avatar");
+    const uname=user.displayName||(user.email?user.email.split("@")[0]:"User");
+    document.getElementById("profileUsername").textContent=uname;
+    document.getElementById("profileEmail").textContent=user.email||"";
+    /* textContent, never innerHTML — a display name must never inject markup */
+    document.getElementById("pp-name").textContent=uname;
+    document.getElementById("pp-mail").textContent=user.email||"";
+    document.getElementById("pp-avatar").textContent=uname.trim().charAt(0).toUpperCase()||"U";
+
+    document.getElementById("pp-photo").addEventListener("click",()=>{
+        if(window._closeProfilePanel) window._closeProfilePanel();
+        window._openPicModal(user.uid,false);
+    });
+    document.getElementById("pp-signout").addEventListener("click",()=>logout());
+    av.style.cssText="width:50px;height:50px;border-radius:50%;outline:2.5px solid #5c4ee5;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;background:#5c4ee5;color:#fff;overflow:hidden;background-size:cover;background-position:center;";
+    av.textContent=(user.displayName||user.email||"?")[0].toUpperCase();
+    initModal();
+
+    const url=await loadExistingPic(user.uid);
+    /* the photo prompt no longer opens by itself — the student can set a
+       photo whenever they like from the profile panel */
+    if(url){applyAvatarUrl(url);}
+    startUsageTracking(user.uid);
+});
+
+window.logout=async()=>{
+    window._loggingOut=true;
+    window.sendGoodbyeEmail();
+    await signOut(auth);
+    window.location.href="main.html";
+};
+</script>
+
+<!-- UI Logic -->
+<script>
+(function(){
+    var now=new Date(),m=now.getHours()*60+now.getMinutes();
+    if(!(m>=540&&m<1170)){
+        document.addEventListener("DOMContentLoaded",function(){
+            document.querySelector(".sandbox-container").style.filter="blur(2.5px)";
+            document.querySelector(".sandbox-container").style.pointerEvents="none";
+            document.getElementById("access-restrict-modal").style.display="flex";
+        });
+    }
+})();
+
+var sandboxStarted=false;
+
+document.getElementById("btn-start").addEventListener("click",function(){
+    if(sandboxStarted)return;
+    var btn=this,
+        icon=document.getElementById("start-icon"),
+        lbl=document.getElementById("start-label"),
+        badge=document.getElementById("sandbox-status-badge");
+
+    btn.disabled=true;
+    btn.classList.remove("pulse-glow");
+    icon.className="fas fa-circle-notch spin";
+    lbl.textContent="Starting…";
+    badge.className="badge-starting";
+    badge.innerHTML='<span class="badge-dot"></span> Starting…';
+
+    /* daily points for starting the sandbox — the award itself is guarded
+       server-side, so calling it more than once a day is harmless */
+    if(window.__awardStartBonus) window.__awardStartBonus();
+
+    setTimeout(function(){
+        sandboxStarted=true;
+        btn.style.display="none";
+        badge.className="badge-running";
+        badge.innerHTML='<span class="badge-dot"></span> Running';
+        if(window._animBadgeRunning)window._animBadgeRunning();
+
+        document.getElementById("btn-delete").style.display="inline-flex";
+        document.getElementById("btn-open").style.display="inline-block";
+        document.getElementById("btn-delete").disabled=false;
+        document.getElementById("btn-open").disabled=false;
+
+        /* Unblur the encrypted notice — never reveal the URL */
+        document.getElementById("url-locked-notice").classList.add("unblurred");
+        if(window._animUnlock)window._animUnlock("#url-locked-notice");
+
+        /* Silently open sandbox URL in background tab */
+        window.open("https://REPLACE_ACCOUNT_ID.signin.aws.amazon.com/console?region=us-east-1","_blank","noopener,noreferrer");
+
+        /* Unlock credentials */
+        document.getElementById("creds-wrapper").classList.remove("creds-locked");
+        if(window._animUnlock)window._animUnlock("#creds-wrapper");
+
+        showStatus("✅ Sandbox started! Credentials unlocked.",2500);
+    },2500);
+});
+
+
+
+/* Delete sandbox */
+document.getElementById("btn-delete").addEventListener("click",function(){
+    if(!confirm("Delete this sandbox? This cannot be undone."))return;
+    ["btn-open","btn-delete","btn-start"].forEach(id=>{var el=document.getElementById(id);if(el)el.disabled=true;});
+    var b=document.getElementById("sandbox-status-badge");
+    b.className="badge-stopped";
+    b.innerHTML='<span class="badge-dot"></span> Deleted';
+    document.getElementById("status-bar").innerHTML=
+        '<div class="stat-tile stat-tile--danger" style="flex:1 1 100%">'+
+          '<span class="stat-ico"><i class="fas fa-triangle-exclamation"></i></span>'+
+          '<div><span class="stat-key">Sandbox</span>'+
+          '<span class="stat-val">Deleted &mdash; contact your admin</span></div>'+
+        '</div>';
+    document.querySelectorAll(".inputs-grid input").forEach(i=>{i.value="";i.disabled=true;i.style.opacity=0.45;});
+    /* Re-blur the encrypted notice on delete */
+    document.getElementById("url-locked-notice").classList.remove("unblurred");
+    document.getElementById("creds-wrapper").classList.add("creds-locked");
+    showStatus("Sandbox deleted",1600);
+});
+
+function copyToClipboard(t){
+    if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>showStatus("Copied!",1400),()=>fb(t));}else fb(t);
+}
+function fb(t){var x=document.createElement("textarea");x.value=t;document.body.appendChild(x);x.select();document.execCommand("copy");document.body.removeChild(x);showStatus("Copied!",1200);}
+function showStatus(msg,ms,err){
+    var s=document.createElement("div");
+    s.className="glass-toast"+(err?" is-error":"");
+    s.innerHTML='<span class="toast-ico"><i class="fas '+(err?'fa-circle-exclamation':'fa-circle-check')+'"></i></span>';
+    s.appendChild(document.createTextNode(msg));
+    document.body.appendChild(s);
+    requestAnimationFrame(()=>s.classList.add("in"));
+    setTimeout(()=>{s.classList.remove("in");setTimeout(()=>s.remove(),260);},ms||1400);
+}
+
+document.addEventListener("click",function(e){
+    if(e.target.matches("[data-copy-target]")){var i=document.getElementById(e.target.getAttribute("data-copy-target"));if(i)copyToClipboard(i.value||i.innerText);}
+    if(e.target.matches("[data-toggle-pass]")){var i=document.getElementById(e.target.getAttribute("data-toggle-pass"));if(i.type==="password"){i.type="text";e.target.classList.replace("fa-eye","fa-eye-slash");}else{i.type="password";e.target.classList.replace("fa-eye-slash","fa-eye");}}
+});
+
+/* Open Sandbox button */
+document.getElementById("btn-open").addEventListener("click",function(){
+    window.open("https://REPLACE_ACCOUNT_ID.signin.aws.amazon.com/console?region=us-east-1","_blank","noopener,noreferrer");
+});
+
+document.getElementById("help-fab").addEventListener("click",function(){document.getElementById("help-modal").style.display="flex";});
+document.getElementById("help-modal").addEventListener("click",function(e){if(e.target===this)this.style.display="none";});
+document.querySelectorAll(".inputs-grid input").forEach(i=>i.addEventListener("click",function(){this.select();}));
+</script>
+
+<!-- ===================== ADVANCED ANIMATIONS (GSAP + anime.js) ===================== -->
+<script>
+(function(){
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function run(){
+        var hasGSAP = typeof gsap !== "undefined";
+        var hasAnime = typeof anime !== "undefined";
+
+        /* If libs failed to load, make sure hidden elements are visible */
+        if(!hasGSAP){
+            document.querySelectorAll(".anim-reveal").forEach(function(el){el.style.opacity="1";});
+        }
+        if(reduce){
+            document.querySelectorAll(".anim-reveal").forEach(function(el){el.style.opacity="1";});
+            return;
+        }
+
+        /* ---------- 1. Aurora blobs drift (anime.js) ---------- */
+        if(hasAnime){
+            anime({targets:".aurora-blob.b1",translateX:[0,80,0],translateY:[0,60,0],scale:[1,1.15,1],duration:16000,easing:"easeInOutSine",loop:true});
+            anime({targets:".aurora-blob.b2",translateX:[0,-70,0],translateY:[0,-50,0],scale:[1,1.2,1],duration:19000,easing:"easeInOutSine",loop:true});
+            anime({targets:".aurora-blob.b3",translateX:[0,60,0],translateY:[0,-70,0],scale:[1,1.1,1],duration:22000,easing:"easeInOutSine",loop:true});
+        }
+
+        /* ---------- 2. Floating particle field (canvas) ---------- */
+        (function particles(){
+            var c=document.getElementById("particle-canvas");
+            if(!c)return;
+            var ctx=c.getContext("2d"), parts=[], W, H;
+            function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+            resize(); window.addEventListener("resize",resize);
+            var count=Math.min(60,Math.floor(window.innerWidth/22));
+            for(var i=0;i<count;i++){
+                parts.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.8+0.4,
+                    vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25,a:Math.random()*0.5+0.15});
+            }
+            (function draw(){
+                ctx.clearRect(0,0,W,H);
+                for(var i=0;i<parts.length;i++){
+                    var p=parts[i]; p.x+=p.vx; p.y+=p.vy;
+                    if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+                    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283);
+                    ctx.fillStyle="rgba(167,139,250,"+p.a+")"; ctx.fill();
+                }
+                requestAnimationFrame(draw);
+            })();
+        })();
+
+        if(!hasGSAP)return;
+
+        /* ---------- 3. Entrance timeline (GSAP) ---------- */
+        gsap.set(".anim-reveal",{opacity:1});
+        var tl=gsap.timeline({defaults:{ease:"power3.out"}});
+        tl.from(".header",{y:-40,opacity:0,duration:0.7})
+          .from(".title-block > *",{x:-18,opacity:0,stagger:0.07,duration:0.5},"-=0.4")
+          .from(".usage-meter > *",{y:8,opacity:0,stagger:0.07,duration:0.45,ease:"back.out(1.8)"},"-=0.25")
+          .from(".main-panel",{y:50,opacity:0,duration:0.8},"-=0.5")
+          .from(".action-bar > *",{y:20,opacity:0,stagger:0.12,duration:0.5},"-=0.4")
+          .from(".status-bar",{opacity:0,y:15,duration:0.5},"-=0.3")
+          .from(".content-layout > *",{y:30,opacity:0,stagger:0.15,duration:0.6},"-=0.3")
+          .from(".help-fab",{scale:0,opacity:0,duration:0.5,ease:"back.out(2)"},"-=0.2");
+
+        /* ---------- 4. Scroll-triggered reveals for lists/cards ---------- */
+        if(typeof ScrollTrigger!=="undefined"){
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.utils.toArray(".info-card, .inputs-grid .input-group, ul li").forEach(function(el){
+                gsap.from(el,{opacity:0,y:24,duration:0.6,ease:"power2.out",
+                    scrollTrigger:{trigger:el,start:"top 92%",toggleActions:"play none none none"}});
+            });
+        }
+
+        /* ---------- 5. Help FAB float + hover pop ---------- */
+        gsap.to(".help-fab",{y:-6,duration:1.6,ease:"sine.inOut",yoyo:true,repeat:-1,delay:1.5});
+        var fab=document.getElementById("help-fab");
+        if(fab){
+            fab.addEventListener("mouseenter",function(){gsap.to(fab,{scale:1.15,rotate:15,duration:0.3,ease:"back.out(2)"});});
+            fab.addEventListener("mouseleave",function(){gsap.to(fab,{scale:1,rotate:0,duration:0.3});});
+        }
+
+        /* ---------- 6. Magnetic / lift hover on action buttons ---------- */
+        document.querySelectorAll(".start-btn,.open-btn,.delete-btn").forEach(function(btn){
+            btn.addEventListener("mouseenter",function(){gsap.to(btn,{y:-3,duration:0.25,ease:"power2.out"});});
+            btn.addEventListener("mouseleave",function(){gsap.to(btn,{y:0,duration:0.25,ease:"power2.out"});});
+        });
+
+        /* ---------- 7. Card tilt on the info card ---------- */
+        var card=document.querySelector(".info-card");
+        if(card){
+            card.style.transformStyle="preserve-3d";
+            card.addEventListener("mousemove",function(e){
+                var r=card.getBoundingClientRect();
+                var rx=((e.clientY-r.top)/r.height-0.5)*-8;
+                var ry=((e.clientX-r.left)/r.width-0.5)*8;
+                gsap.to(card,{rotateX:rx,rotateY:ry,duration:0.3,ease:"power2.out",transformPerspective:800});
+            });
+            card.addEventListener("mouseleave",function(){gsap.to(card,{rotateX:0,rotateY:0,duration:0.5,ease:"power2.out"});});
+        }
+
+        /* ---------- 8. Expose helpers used by main UI script ---------- */
+
+        // Pulse the status badge when it turns "running"
+        window._animBadgeRunning=function(){
+            var b=document.getElementById("sandbox-status-badge");
+            if(b)gsap.fromTo(b,{scale:0.6,opacity:0},{scale:1,opacity:1,duration:0.5,ease:"back.out(2)"});
+        };
+
+        // Unblur reveal animation for the URL notice / credentials
+        window._animUnlock=function(sel){
+            var el=document.querySelector(sel);
+            if(el)gsap.from(el,{scale:0.94,opacity:0,duration:0.6,ease:"back.out(1.6)"});
+        };
+
+    }
+
+    if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",run);}
+    else{run();}
+})();
+</script>
+
+<!-- Analytics -->
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-MBJM2CCKJ6"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-MBJM2CCKJ6");</script>
+<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","vv8bw0cwsp");</script>
+<script type="text/javascript">(function(e,c){if(!c.__SV){var l,h;window.mixpanel=c;c._i=[];c.init=function(q,r,f){function t(d,a){var g=a.split(".");2==g.length&&(d=d[g[0]],a=g[1]);d[a]=function(){d.push([a].concat(Array.prototype.slice.call(arguments,0)))}}var b=c;"undefined"!==typeof f?b=c[f]=[]:f="mixpanel";b.people=b.people||[];b.toString=function(d){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);d||(a+=" (stub)");return a};b.people.toString=function(){return b.toString(1)+".people (stub)"};l="disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking start_batch_senders start_session_recording stop_session_recording people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user people.remove".split(" ");for(h=0;h<l.length;h++)t(b,l[h]);var n="set set_once union unset remove delete".split(" ");b.get_group=function(){function d(p){a[p]=function(){b.push([g,[p].concat(Array.prototype.slice.call(arguments,0))])}}for(var a={},g=["get_group"].concat(Array.prototype.slice.call(arguments,0)),m=0;m<n.length;m++)d(n[m]);return a};c._i.push([q,r,f])};c.__SV=1.2;var k=e.createElement("script");k.type="text/javascript";k.async=!0;k.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest min.js";e=e.getElementsByTagName("script")[0];e.parentNode.insertBefore(k,e)}})(document,window.mixpanel||[]);mixpanel.init("89c48b1d28413f9f6d544345a141e8c0",{autocapture:true,record_sessions_percent:100,api_host:"https://api-eu.mixpanel.com"});</script>
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wvhlpevow5");
+</script>
+
+<script src="../ai-agent-widget.js"></script>
+
+
+</body></html>
