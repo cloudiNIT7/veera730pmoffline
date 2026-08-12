@@ -596,8 +596,7 @@
           <span class="corner bl"></span>
           <span class="corner br"></span>
           <iframe
-            id="pdfFrame"
-            src="https://storage.googleapis.com/abinashvideotemacces/aws_final_Notes.pdf#toolbar=0&navpanes=0&scrollbar=1">
+            id="pdfFrame">
           </iframe>
         </div>
 
@@ -609,6 +608,10 @@
   <div class="badge"><span class="status-dot"></span>Cloud Init Secure Reader</div>
 
   <script>
+    // Notes URL is served by the Cloudflare Worker route below,
+    // so it is not hardcoded in this file.
+    const NOTES_URL_ENDPOINT = "https://notesawsbackend.cloudgcp08.workers.dev/";
+
     const loadingScreen = document.getElementById("loadingScreen");
     const pdfFrame = document.getElementById("pdfFrame");
     const progressLine = document.getElementById("progressLine");
@@ -681,6 +684,36 @@
       loadingSubtitle.textContent = "PDF failed to load";
       loadingPercent.textContent = "Error";
     });
+
+    // Fallback: never let the loader hang. If the iframe "load" event
+    // never fires (blocked, CORS, 404, slow network), force the viewer
+    // open after a timeout so the page is always usable.
+    setTimeout(function () {
+      if (!pdfLoaded) {
+        clearInterval(fakeLoading);
+        updateProgress(100);
+        loadingSubtitle.textContent = "Ready";
+        setTimeout(function () {
+          loadingScreen.classList.add("hide");
+        }, 500);
+      }
+    }, 8000);
+
+    // Fetch the notes URL from the Worker, then point the iframe at it.
+    // Listeners above are already attached, so no load-event race.
+    (async function loadNotesUrl() {
+      try {
+        const res = await fetch(NOTES_URL_ENDPOINT);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!data.url) throw new Error("No url in response");
+        pdfFrame.src = data.url + "#toolbar=0&navpanes=0&scrollbar=1";
+      } catch (e) {
+        clearInterval(fakeLoading);
+        loadingSubtitle.textContent = "Could not load notes URL";
+        loadingPercent.textContent = "Error";
+      }
+    })();
 
     document.addEventListener("contextmenu", function(event) {
       event.preventDefault();
