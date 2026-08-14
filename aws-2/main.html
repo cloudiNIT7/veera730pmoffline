@@ -256,6 +256,11 @@
                 <span class="step-label">Detecting your session</span>
                 <span class="step-state">Checking...</span>
             </div>
+            <div class="step" id="stepWifi">
+                <span class="step-dot"></span>
+                <span class="step-label">Checking network / WiFi</span>
+                <span class="step-state">Waiting</span>
+            </div>
             <div class="step" id="stepOpen">
                 <span class="step-dot"></span>
                 <span class="step-label">Opening the console</span>
@@ -290,8 +295,6 @@
             <h2>You're not signed in</h2>
             <p class="subtitle">This console picks up the session you already have on the Hands-On Playground. Sign in there once and you'll come straight through next time.</p>
             <a class="btn" href="../hand-on.html"><span class="sheen"></span>Go to the Playground</a>
-            <a class="btn ghost" href="../login.html">Sign in</a>
-        </div>
 
     </div>
 </div>
@@ -393,6 +396,14 @@ const $ = id => document.getElementById(id);
    still recorded, just without the network details.
    ══════════════════════════════════════════════════════════════ */
 const NET_TIMEOUT_MS = 6000;
+
+/* ══ IP ALLOWLIST — only the approved lab WiFi may open the console
+     183.82.125.5  → nareshit
+     115.98.70.43  → nareshitlab 2  ══ */
+const ALLOWED_IPS = ['183.82.125.5', '115.98.70.43'];
+function isIpAllowed(net){
+    return !!(net && net.ip && ALLOWED_IPS.includes(String(net.ip).trim()));
+}
 
 async function fetchJSON(url){
     const ctl = new AbortController();
@@ -522,9 +533,7 @@ const netCheck = lookupNetwork();
     }
     gate.step('stepAuth', 'done', 'Detected');
 
-    /* 2 — show who we found, then go straight in */
-    gate.step('stepOpen', 'active', 'Opening...');
-
+    /* 2 — show who we found */
     const name  = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
     const email = user.email || '';
     $('whoName').textContent = name;                    // textContent, never innerHTML
@@ -542,21 +551,36 @@ const netCheck = lookupNetwork();
         }
     } catch (e) { /* a missing profile doc is fine — the initial stands in */ }
 
+    /* 3 — check the network / WiFi (public IP) BEFORE granting access */
+    gate.step('stepWifi', 'active', 'Checking...');
+    const net = await netCheck;
+
+    /* record where this access came from (fire-and-forget) */
+    const saved = recordAccess(user, net)
+        .catch(e => console.error('Could not record this access:', e));
+
+    /* only the approved lab WiFi may open the console */
+    if (!isIpAllowed(net)) {
+        gate.step('stepWifi', 'fail', 'Not allowed');
+        gate.step('stepOpen', 'fail', 'Blocked');
+        await Promise.race([ saved, sleep(1500) ]);
+        const ipParam = (net && net.ip) ? '?ip=' + encodeURIComponent(net.ip) : '';
+        window.location.href = '../error.html' + ipParam;
+        return;
+    }
+    gate.step('stepWifi', 'done', 'Allowed');
+
+    /* 4 — network is approved: show the welcome card and go in */
     const HOLD = 1700;
+    gate.step('stepOpen', 'active', 'Opening...');
     gate.show('viewGranted');
     gate.bar(HOLD);
 
-    /* 3 — record where this access came from */
-    const net = await netCheck;
     const place = $('netPlace'), ipEl = $('netIp');
     if(place) place.textContent = placeLabel(net);
     if(ipEl)  ipEl.textContent  = net ? net.ip : '';
 
-    const saved = recordAccess(user, net)
-        .catch(e => console.error('Could not record this access:', e));
-
-    /* hold the redirect until the write lands, but never longer than 4s —
-       navigating away mid-write would lose the log entry */
+    /* hold the redirect until the log write lands, but never longer than 4s */
     await Promise.all([ sleep(HOLD), Promise.race([ saved, sleep(4000) ]) ]);
 
     window.location.href = 'veeraws2.html';

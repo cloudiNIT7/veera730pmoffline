@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Blocked · Network not allowed</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg:#0B0F1C; --panel:#111726; --surface:#1A2133; --surface-2:#212A40;
+            --line:#2A3450; --ink:#F2F5FC; --ink-soft:#93A0BE; --ink-faint:#5A688C;
+            --accent:#FF9900; --ok:#34D399; --err:#FB7185; --warn:#FBBF24; --radius:16px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { height:100%; }
+        body {
+            font-family:'Inter',system-ui,sans-serif; min-height:100vh;
+            display:flex; justify-content:center; align-items:center;
+            background:var(--bg); color:var(--ink); overflow:hidden; position:relative;
+            padding:20px;
+        }
+        .backdrop {
+            position:fixed; inset:0; z-index:0;
+            background:
+                radial-gradient(900px 600px at 20% 0%, rgba(251,113,133,.10), transparent 60%),
+                radial-gradient(800px 600px at 100% 100%, rgba(77,139,255,.07), transparent 55%),
+                var(--bg);
+        }
+        .grid-lines {
+            position:fixed; inset:0; z-index:0; opacity:.5;
+            background-image:
+                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+            background-size:52px 52px;
+            mask-image:radial-gradient(ellipse 70% 70% at center,#000 40%,transparent 100%);
+            -webkit-mask-image:radial-gradient(ellipse 70% 70% at center,#000 40%,transparent 100%);
+        }
+        .card {
+            position:relative; z-index:2; width:460px; max-width:100%;
+            background:var(--panel); border:1px solid var(--line);
+            border-radius:var(--radius); box-shadow:0 30px 90px rgba(0,0,0,.55);
+            padding:44px 40px 36px; text-align:center;
+        }
+
+        /* broken-wifi mark */
+        .wifi-mark { width:96px; height:96px; margin:0 auto 24px; display:block; }
+        .wifi-mark .arc { fill:none; stroke:var(--err); stroke-width:6; stroke-linecap:round; opacity:.85; }
+        .wifi-mark .arc.a1 { animation:flick 2.4s ease-in-out infinite; }
+        .wifi-mark .arc.a2 { animation:flick 2.4s ease-in-out .2s infinite; }
+        .wifi-mark .arc.a3 { animation:flick 2.4s ease-in-out .4s infinite; }
+        .wifi-mark .dot { fill:var(--err); }
+        .wifi-mark .slash { stroke:var(--err); stroke-width:6; stroke-linecap:round; }
+        @keyframes flick { 0%,100%{opacity:.85;} 50%{opacity:.28;} }
+
+        h1 { font-family:'Space Grotesk',sans-serif; font-size:1.55em; font-weight:700; letter-spacing:-.01em; margin-bottom:12px; }
+        .sub { font-size:.96em; color:var(--ink-soft); line-height:1.55; margin-bottom:26px; }
+
+        .ip-box {
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            background:var(--surface); border:1px solid var(--line);
+            border-radius:12px; padding:14px 16px; margin-bottom:28px;
+        }
+        .ip-box .lab { font-size:.74em; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); }
+        .ip-box .val { font-family:'Space Grotesk',monospace; font-size:1.02em; font-weight:600; color:var(--err); }
+
+        .actions { display:flex; flex-direction:column; gap:12px; }
+        .btn {
+            position:relative; overflow:hidden;
+            display:inline-flex; align-items:center; justify-content:center;
+            height:48px; border-radius:12px; text-decoration:none;
+            font-weight:600; font-size:.95em; transition:transform .12s ease, background .2s ease;
+        }
+        .btn:active { transform:translateY(1px); }
+        .btn.primary { background:var(--accent); color:#1a1200; }
+        .btn.primary:hover { background:#ffab2e; }
+        .btn.ghost { background:transparent; color:var(--ink-soft); border:1px solid var(--line); }
+        .btn.ghost:hover { color:var(--ink); border-color:var(--ink-faint); }
+
+        .hint { margin-top:22px; font-size:.8em; color:var(--ink-faint); line-height:1.5; }
+
+        @media (max-width:520px){ .card{ padding:36px 24px 30px; } }
+        @media (prefers-reduced-motion:reduce){ .wifi-mark .arc{ animation:none !important; } }
+    </style>
+</head>
+<body>
+    <div class="backdrop"></div>
+    <div class="grid-lines"></div>
+
+    <div class="card">
+        <svg class="wifi-mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path class="arc a1" d="M16 44 a48 48 0 0 1 68 0" />
+            <path class="arc a2" d="M28 58 a32 32 0 0 1 44 0" />
+            <path class="arc a3" d="M39 71 a17 17 0 0 1 22 0" />
+            <circle class="dot" cx="50" cy="83" r="5" />
+            <line class="slash" x1="20" y1="20" x2="80" y2="84" />
+        </svg>
+
+        <h1>Network not allowed</h1>
+        <p class="sub">Your device IP is not on the approved lab network. Please connect to the approved lab WiFi to open the AWS console, or check with the developer <strong>Abinash Kumar</strong>.</p>
+
+        <div class="ip-box">
+            <span class="lab">Your IP</span>
+            <span class="val" id="ip">checking…</span>
+        </div>
+
+        <div class="actions">
+            <a class="btn primary" href="hand-on.html">Back to Playground</a>
+            <a class="btn ghost" href="index.html">Home</a>
+        </div>
+
+        <p class="hint">Approved networks: <strong>nareshit</strong> &middot; <strong>nareshitlab 2</strong>. If you're on the right WiFi and still see this, contact the developer &mdash; <strong>Abinash Kumar</strong>.</p>
+    </div>
+
+    <script>
+    /* show the detected IP: prefer the one passed in the URL (?ip=…), else look it up */
+    (function(){
+        var el = document.getElementById('ip');
+        try {
+            var q = new URLSearchParams(location.search).get('ip');
+            if (q) { el.textContent = q; return; }
+        } catch(e){}
+        fetch('https://ipwho.is/', { cache:'no-store' })
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(d){ el.textContent = (d && d.ip) ? d.ip : 'unavailable'; })
+            .catch(function(){ el.textContent = 'unavailable'; });
+    })();
+    </script>
+</body>
+</html>
